@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Sparkles, Send, X } from 'lucide-react';
-import { useAppStore } from '../store';
+import { useShallow } from 'zustand/react/shallow';
+import { useAppStore, paperFilterSnapshot } from '../store';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
+import { countActiveFilterSelections } from '../utils/paperFilters';
 
 export const QueryBar: React.FC = () => {
   const [query, setQuery] = useState('');
@@ -14,13 +16,44 @@ export const QueryBar: React.FC = () => {
     setSearchMode,
     setSearchQuery,
     viewMode,
-    filters,
-    organFilters,
+    researchTypeFilters,
+    toggleResearchTypeFilter,
+    fundingFilters,
+    toggleFundingFilter,
     techniqueFilters,
-    toggleFilter,
-    toggleOrganFilter,
     toggleTechniqueFilter,
-  } = useAppStore();
+    modelLeafFilters,
+    toggleModelLeafFilter,
+    outcomeFilters,
+    toggleOutcomeFilter,
+    publicationFilters,
+    togglePublicationFilter,
+  } = useAppStore(
+    useShallow((s) => ({
+      submitQuery: s.submitQuery,
+      isQuerying: s.isQuerying,
+      queryResult: s.queryResult,
+      searchMode: s.searchMode,
+      setSearchMode: s.setSearchMode,
+      setSearchQuery: s.setSearchQuery,
+      viewMode: s.viewMode,
+      researchTypeFilters: s.researchTypeFilters,
+      toggleResearchTypeFilter: s.toggleResearchTypeFilter,
+      fundingFilters: s.fundingFilters,
+      toggleFundingFilter: s.toggleFundingFilter,
+      techniqueFilters: s.techniqueFilters,
+      toggleTechniqueFilter: s.toggleTechniqueFilter,
+      modelLeafFilters: s.modelLeafFilters,
+      toggleModelLeafFilter: s.toggleModelLeafFilter,
+      outcomeFilters: s.outcomeFilters,
+      toggleOutcomeFilter: s.toggleOutcomeFilter,
+      publicationFilters: s.publicationFilters,
+      togglePublicationFilter: s.togglePublicationFilter,
+    }))
+  );
+
+  const snap = useAppStore(useShallow(paperFilterSnapshot));
+  const activeChips = countActiveFilterSelections(snap) > 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,16 +67,11 @@ export const QueryBar: React.FC = () => {
     }
   };
 
-  const activeChips =
-    filters.length + organFilters.length + techniqueFilters.length > 0;
-
   return (
     <div
       className={clsx(
         'w-full px-4 z-20',
-        viewMode === 'graph'
-          ? 'absolute bottom-8 left-1/2 -translate-x-1/2 max-w-2xl'
-          : 'absolute top-4 left-4 max-w-xl'
+        viewMode === 'graph' ? 'absolute bottom-8 left-1/2 -translate-x-1/2 max-w-2xl' : 'absolute top-4 left-4 max-w-xl'
       )}
     >
       <motion.form
@@ -53,14 +81,11 @@ export const QueryBar: React.FC = () => {
         onSubmit={handleSubmit}
         className="relative group"
       >
-        {/* Glow — only in AI mode */}
         {searchMode === 'ai' && (
           <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 rounded-2xl blur-md opacity-40 group-hover:opacity-60 transition duration-500" />
         )}
 
         <div className="relative flex items-center bg-white/90 backdrop-blur-xl border border-white/50 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] overflow-hidden">
-
-          {/* Mode toggle pill */}
           <div className="flex items-center bg-slate-100 rounded-xl p-0.5 ml-3 gap-0.5 shrink-0">
             <button
               id="search-mode-keyword"
@@ -68,9 +93,7 @@ export const QueryBar: React.FC = () => {
               onClick={() => setSearchMode('keyword')}
               className={clsx(
                 'px-2.5 py-1 rounded-[9px] text-[11px] font-bold transition-all',
-                searchMode === 'keyword'
-                  ? 'bg-white text-slate-800 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
+                searchMode === 'keyword' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
               )}
             >
               Keyword
@@ -81,35 +104,26 @@ export const QueryBar: React.FC = () => {
               onClick={() => setSearchMode('ai')}
               className={clsx(
                 'px-2.5 py-1 rounded-[9px] text-[11px] font-bold transition-all',
-                searchMode === 'ai'
-                  ? 'bg-white text-slate-800 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
+                searchMode === 'ai' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
               )}
             >
               Ask AI
             </button>
           </div>
 
-          {/* Sparkles icon */}
           <div className="pl-3 pr-2 py-4 flex items-center justify-center text-blue-500 shrink-0">
             <Sparkles size={20} className={isQuerying ? 'animate-pulse' : ''} />
           </div>
 
-          {/* Text input */}
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={
-              searchMode === 'keyword'
-                ? 'Filter by keyword…'
-                : 'Ask anything about cryobiology…'
-            }
+            placeholder={searchMode === 'keyword' ? 'Filter by keyword…' : 'Ask anything about cryobiology…'}
             className="flex-1 bg-transparent border-none text-slate-800 placeholder-slate-400 py-4 px-2 focus:outline-none text-base font-medium"
             disabled={isQuerying}
           />
 
-          {/* Submit button */}
           <button
             type="submit"
             disabled={!query.trim() || isQuerying}
@@ -122,7 +136,6 @@ export const QueryBar: React.FC = () => {
         </div>
       </motion.form>
 
-      {/* Active filter chips */}
       <AnimatePresence>
         {activeChips && (
           <motion.div
@@ -131,24 +144,24 @@ export const QueryBar: React.FC = () => {
             exit={{ opacity: 0, y: -4 }}
             className="flex flex-wrap gap-1.5 mt-2 px-1"
           >
-            {filters.map((f) => (
+            {researchTypeFilters.map((f) => (
               <button
                 key={f}
                 type="button"
-                onClick={() => toggleFilter(f)}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-300 text-[11px] font-semibold hover:bg-blue-500/25 transition-colors"
+                onClick={() => toggleResearchTypeFilter(f)}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-sky-500/15 border border-sky-500/30 text-sky-300 text-[11px] font-semibold hover:bg-sky-500/25 transition-colors"
               >
                 {f} <X size={10} />
               </button>
             ))}
-            {organFilters.map((o) => (
+            {fundingFilters.map((f) => (
               <button
-                key={o}
+                key={f}
                 type="button"
-                onClick={() => toggleOrganFilter(o)}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-semibold hover:bg-emerald-500/25 transition-colors"
+                onClick={() => toggleFundingFilter(f)}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-teal-500/15 border border-teal-500/30 text-teal-300 text-[11px] font-semibold hover:bg-teal-500/25 transition-colors"
               >
-                {o} <X size={10} />
+                {f} <X size={10} />
               </button>
             ))}
             {techniqueFilters.map((t) => (
@@ -156,24 +169,51 @@ export const QueryBar: React.FC = () => {
                 key={t}
                 type="button"
                 onClick={() => toggleTechniqueFilter(t)}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[11px] font-semibold hover:bg-amber-500/25 transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-[11px] font-semibold hover:bg-cyan-500/25 transition-colors"
               >
                 {t} <X size={10} />
+              </button>
+            ))}
+            {outcomeFilters.map((o) => (
+              <button
+                key={o}
+                type="button"
+                onClick={() => toggleOutcomeFilter(o)}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-semibold hover:bg-emerald-500/25 transition-colors"
+              >
+                {o} <X size={10} />
+              </button>
+            ))}
+            {modelLeafFilters.map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => toggleModelLeafFilter(m)}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-fuchsia-500/15 border border-fuchsia-500/30 text-fuchsia-300 text-[11px] font-semibold hover:bg-fuchsia-500/25 transition-colors"
+              >
+                {m} <X size={10} />
+              </button>
+            ))}
+            {publicationFilters.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => togglePublicationFilter(p)}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-500/15 border border-violet-500/30 text-violet-300 text-[11px] font-semibold hover:bg-violet-500/25 transition-colors"
+              >
+                {p} <X size={10} />
               </button>
             ))}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Graph-mode hint */}
       {viewMode === 'graph' && !queryResult && (
         <p className="text-center text-[11px] text-slate-500 mt-2 font-medium tracking-wide pointer-events-none">
-          Click a node to explore · Switch to{' '}
-          <span className="text-slate-400">Ask AI</span> for synthesis
+          Click a node to explore · Switch to <span className="text-slate-400">Ask AI</span> for synthesis
         </p>
       )}
 
-      {/* AI querying indicator */}
       <AnimatePresence>
         {isQuerying && (
           <motion.div

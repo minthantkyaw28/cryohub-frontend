@@ -1,53 +1,181 @@
 import React, { useState } from 'react';
 import { SlidersHorizontal, Sparkles, Search, ArrowRight, X, BrainCircuit } from 'lucide-react';
 import { clsx } from 'clsx';
-import { useAppStore } from '../store';
+import { useShallow } from 'zustand/react/shallow';
+import { useAppStore, paperFilterSnapshot } from '../store';
 import { motion, AnimatePresence } from 'framer-motion';
+import { countActiveFilterSelections } from '../utils/paperFilters';
 
-// ─── Active filter chips ──────────────────────────────────────────────────────
 const FilterChips: React.FC = () => {
+  const snap = useAppStore(useShallow(paperFilterSnapshot));
   const {
-    filters, toggleFilter,
-    organFilters, toggleOrganFilter,
-    techniqueFilters, toggleTechniqueFilter,
-  } = useAppStore();
+    researchTypeFilters,
+    toggleResearchTypeFilter,
+    fundingFilters,
+    toggleFundingFilter,
+    techniqueFilters,
+    toggleTechniqueFilter,
+    modelLeafFilters,
+    toggleModelLeafFilter,
+    outcomeFilters,
+    toggleOutcomeFilter,
+    publicationFilters,
+    togglePublicationFilter,
+    openAccess,
+    setOpenAccess,
+    journalQuery,
+    setJournalQuery,
+    authorInstitutionQuery,
+    setAuthorInstitutionQuery,
+    countryQuery,
+    setCountryQuery,
+    cpaTypeQuery,
+    setCpaTypeQuery,
+  } = useAppStore(
+    useShallow((s) => ({
+      researchTypeFilters: s.researchTypeFilters,
+      toggleResearchTypeFilter: s.toggleResearchTypeFilter,
+      fundingFilters: s.fundingFilters,
+      toggleFundingFilter: s.toggleFundingFilter,
+      techniqueFilters: s.techniqueFilters,
+      toggleTechniqueFilter: s.toggleTechniqueFilter,
+      modelLeafFilters: s.modelLeafFilters,
+      toggleModelLeafFilter: s.toggleModelLeafFilter,
+      outcomeFilters: s.outcomeFilters,
+      toggleOutcomeFilter: s.toggleOutcomeFilter,
+      publicationFilters: s.publicationFilters,
+      togglePublicationFilter: s.togglePublicationFilter,
+      openAccess: s.openAccess,
+      setOpenAccess: s.setOpenAccess,
+      journalQuery: s.journalQuery,
+      setJournalQuery: s.setJournalQuery,
+      authorInstitutionQuery: s.authorInstitutionQuery,
+      setAuthorInstitutionQuery: s.setAuthorInstitutionQuery,
+      countryQuery: s.countryQuery,
+      setCountryQuery: s.setCountryQuery,
+      cpaTypeQuery: s.cpaTypeQuery,
+      setCpaTypeQuery: s.setCpaTypeQuery,
+    }))
+  );
 
-  const total = filters.length + organFilters.length + techniqueFilters.length;
-  if (total === 0) return null;
+  const n = countActiveFilterSelections(snap);
+  if (n === 0) return null;
 
   return (
     <div className="flex flex-wrap items-center gap-1.5 px-5 pb-2">
       <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider shrink-0">Active:</span>
-      {filters.map((f) => (
-        <button key={f} type="button" onClick={() => toggleFilter(f)}
-          className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/20 border border-blue-500/40 text-blue-300 text-[11px] font-semibold hover:bg-blue-500/30 transition-colors">
+      {researchTypeFilters.map((f) => (
+        <button
+          key={f}
+          type="button"
+          onClick={() => toggleResearchTypeFilter(f)}
+          className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-500/20 border border-sky-500/40 text-sky-300 text-[11px] font-semibold hover:bg-sky-500/30 transition-colors"
+        >
           {f} <X size={9} />
         </button>
       ))}
-      {organFilters.map((o) => (
-        <button key={o} type="button" onClick={() => toggleOrganFilter(o)}
-          className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-semibold hover:bg-emerald-500/30 transition-colors">
-          {o} <X size={9} />
+      {fundingFilters.map((f) => (
+        <button
+          key={f}
+          type="button"
+          onClick={() => toggleFundingFilter(f)}
+          className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-teal-500/20 border border-teal-500/40 text-teal-300 text-[11px] font-semibold hover:bg-teal-500/30 transition-colors"
+        >
+          {f} <X size={9} />
         </button>
       ))}
       {techniqueFilters.map((t) => (
-        <button key={t} type="button" onClick={() => toggleTechniqueFilter(t)}
-          className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-semibold hover:bg-amber-500/30 transition-colors">
+        <button
+          key={t}
+          type="button"
+          onClick={() => toggleTechniqueFilter(t)}
+          className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 text-[11px] font-semibold hover:bg-cyan-500/30 transition-colors"
+        >
           {t} <X size={9} />
         </button>
       ))}
+      {outcomeFilters.map((o) => (
+        <button
+          key={o}
+          type="button"
+          onClick={() => toggleOutcomeFilter(o)}
+          className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-semibold hover:bg-emerald-500/30 transition-colors"
+        >
+          {o} <X size={9} />
+        </button>
+      ))}
+      {modelLeafFilters.map((m) => (
+        <button
+          key={m}
+          type="button"
+          onClick={() => toggleModelLeafFilter(m)}
+          className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-fuchsia-500/20 border border-fuchsia-500/40 text-fuchsia-300 text-[11px] font-semibold hover:bg-fuchsia-500/30 transition-colors"
+        >
+          {m} <X size={9} />
+        </button>
+      ))}
+      {publicationFilters.map((p) => (
+        <button
+          key={p}
+          type="button"
+          onClick={() => togglePublicationFilter(p)}
+          className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-500/20 border border-violet-500/40 text-violet-300 text-[11px] font-semibold hover:bg-violet-500/30 transition-colors"
+        >
+          {p} <X size={9} />
+        </button>
+      ))}
+      {openAccess !== 'any' && (
+        <button
+          type="button"
+          onClick={() => setOpenAccess('any')}
+          className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-500/20 border border-slate-500/40 text-slate-300 text-[11px] font-semibold hover:bg-slate-500/30 transition-colors"
+        >
+          OA: {openAccess === 'yes' ? 'Yes' : 'No'} <X size={9} />
+        </button>
+      )}
+      {journalQuery.trim() && (
+        <button
+          type="button"
+          onClick={() => setJournalQuery('')}
+          className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/35 text-blue-300 text-[11px] font-semibold max-w-[200px] truncate"
+        >
+          Journal: {journalQuery} <X size={9} />
+        </button>
+      )}
+      {authorInstitutionQuery.trim() && (
+        <button
+          type="button"
+          onClick={() => setAuthorInstitutionQuery('')}
+          className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/35 text-blue-300 text-[11px] font-semibold max-w-[200px] truncate"
+        >
+          Author: {authorInstitutionQuery} <X size={9} />
+        </button>
+      )}
+      {countryQuery.trim() && (
+        <button
+          type="button"
+          onClick={() => setCountryQuery('')}
+          className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/35 text-blue-300 text-[11px] font-semibold max-w-[200px] truncate"
+        >
+          Region: {countryQuery} <X size={9} />
+        </button>
+      )}
+      {cpaTypeQuery.trim() && (
+        <button
+          type="button"
+          onClick={() => setCpaTypeQuery('')}
+          className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-500/35 text-cyan-300 text-[11px] font-semibold max-w-[200px] truncate"
+        >
+          CPA: {cpaTypeQuery} <X size={9} />
+        </button>
+      )}
     </div>
   );
 };
 
-// ─── Unified search bar ───────────────────────────────────────────────────────
 const UnifiedSearchBar: React.FC = () => {
   const [query, setQuery] = useState('');
-  const {
-    searchMode, setSearchMode,
-    submitQuery, setSearchQuery,
-    isQuerying,
-  } = useAppStore();
+  const { searchMode, setSearchMode, submitQuery, setSearchQuery, isQuerying } = useAppStore();
 
   const isAI = searchMode === 'ai';
 
@@ -84,7 +212,6 @@ const UnifiedSearchBar: React.FC = () => {
             : 'bg-white/[0.06] border-slate-700/60'
         )}
       >
-        {/* Mode icon buttons */}
         <div className="flex items-center shrink-0 border-r border-white/10">
           <button
             id="mode-keyword"
@@ -93,9 +220,7 @@ const UnifiedSearchBar: React.FC = () => {
             onClick={() => switchMode('keyword')}
             className={clsx(
               'flex items-center justify-center w-9 h-9 transition-all',
-              !isAI
-                ? 'text-white bg-white/10'
-                : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+              !isAI ? 'text-white bg-white/10' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
             )}
           >
             <Search size={15} />
@@ -108,16 +233,13 @@ const UnifiedSearchBar: React.FC = () => {
             onClick={() => switchMode('ai')}
             className={clsx(
               'flex items-center justify-center w-9 h-9 transition-all',
-              isAI
-                ? 'text-blue-400 bg-blue-500/10'
-                : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+              isAI ? 'text-blue-400 bg-blue-500/10' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
             )}
           >
             <Sparkles size={15} className={isQuerying ? 'animate-pulse' : ''} />
           </button>
         </div>
 
-        {/* Text input */}
         <input
           type="text"
           value={query}
@@ -131,7 +253,6 @@ const UnifiedSearchBar: React.FC = () => {
           )}
         />
 
-        {/* Send icon */}
         <button
           type="submit"
           disabled={!query.trim() || isQuerying}
@@ -146,7 +267,6 @@ const UnifiedSearchBar: React.FC = () => {
         </button>
       </form>
 
-      {/* Querying status pill */}
       <AnimatePresence>
         {isQuerying && (
           <motion.div
@@ -165,15 +285,12 @@ const UnifiedSearchBar: React.FC = () => {
   );
 };
 
-// ─── Filters button ───────────────────────────────────────────────────────────
 const FiltersButton: React.FC = () => {
-  const {
-    isSidebarOpen, toggleSidebar,
-    filters, organFilters, techniqueFilters, publicationFilters,
-  } = useAppStore();
-
-  const activeCount =
-    filters.length + organFilters.length + techniqueFilters.length + publicationFilters.length;
+  const { isSidebarOpen, toggleSidebar } = useAppStore(
+    useShallow((s) => ({ isSidebarOpen: s.isSidebarOpen, toggleSidebar: s.toggleSidebar }))
+  );
+  const snap = useAppStore(useShallow(paperFilterSnapshot));
+  const activeCount = countActiveFilterSelections(snap);
 
   return (
     <button
@@ -190,20 +307,18 @@ const FiltersButton: React.FC = () => {
       <SlidersHorizontal size={13} />
       <span>Filters</span>
       {activeCount > 0 && (
-        <span className="flex items-center justify-center w-4 h-4 rounded-full bg-blue-500 text-[10px] text-white font-bold leading-none">
-          {activeCount}
+        <span className="flex items-center justify-center min-w-[1rem] h-4 px-1 rounded-full bg-blue-500 text-[10px] text-white font-bold leading-none">
+          {activeCount > 99 ? '99+' : activeCount}
         </span>
       )}
     </button>
   );
 };
 
-// ─── AI Synthesis panel toggle — subtle icon button, right edge ───────────────
 const AISynthesisToggle: React.FC = () => {
-  const { queryResult, isResultsPanelOpen, toggleResultsPanel, searchMode } = useAppStore();
+  const { isResultsPanelOpen, toggleResultsPanel, searchMode } = useAppStore();
 
-  // Only visible in AI mode when a result exists
-  if (searchMode !== 'ai' || !queryResult) return null;
+  if (searchMode !== 'ai') return null;
 
   return (
     <button
@@ -223,45 +338,32 @@ const AISynthesisToggle: React.FC = () => {
   );
 };
 
-// ─── Topbar ───────────────────────────────────────────────────────────────────
 export const Topbar: React.FC = () => {
-  const { filters, organFilters, techniqueFilters } = useAppStore();
-  const hasChips = filters.length + organFilters.length + techniqueFilters.length > 0;
+  const snap = useAppStore(useShallow(paperFilterSnapshot));
+  const activeCount = countActiveFilterSelections(snap);
 
   return (
     <header className="shrink-0 w-full bg-[#0a0a0d]/95 backdrop-blur-xl border-b border-slate-800/60 z-30 relative">
-      {/* Main row — taller at h-16 */}
       <div className="flex items-center gap-3 px-5 h-16">
-
-        {/* Logo — bigger */}
         <div className="flex items-center gap-2.5 shrink-0 mr-2">
           <span className="text-blue-400 text-2xl leading-none select-none">❄</span>
-          <span className="text-xl font-display font-bold text-slate-100 tracking-tight">
-            CryoHUB
-          </span>
+          <span className="text-xl font-display font-bold text-slate-100 tracking-tight">CryoHUB</span>
         </div>
 
-        {/* Left spacer — pushes bar to center */}
         <div className="flex-1" />
 
-        {/* Filters button */}
         <FiltersButton />
 
-        {/* Unified search bar */}
         <div className="w-full max-w-lg">
           <UnifiedSearchBar />
         </div>
 
-        {/* Right spacer */}
         <div className="flex-1" />
 
-        {/* AI Synthesis toggle — appears only after a query */}
         <AISynthesisToggle />
-
       </div>
 
-      {/* Active filter chips row */}
-      {hasChips && <FilterChips />}
+      {activeCount > 0 && <FilterChips />}
     </header>
   );
 };

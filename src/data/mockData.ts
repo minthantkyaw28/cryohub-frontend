@@ -1,195 +1,205 @@
-import { Category, Paper } from '../types';
+import type { ModelTypeMain, Paper, ResearchType } from '../types';
+import {
+  ALL_MODEL_LEAVES,
+  ALL_TECHNIQUE_TAGS,
+  FUNDING_SOURCES,
+  MODEL_TYPE_TREE,
+  OUTCOME_METRICS,
+  PUBLICATION_TYPES,
+  RESEARCH_TYPES,
+} from './searchSchema';
 
-const CATEGORIES: Category[] = [
-  'Cryoprotectants', 
-  'Vitrification', 
-  'Organ Preservation', 
-  'Neural Preservation', 
-  'Cardiac Preservation', 
-  'Ice Physics & Thermodynamics', 
-  'Rewarming Techniques', 
-  'Toxicity & Biocompatibility', 
-  'Nanotechnology Methods', 
-  'Clinical Applications'
+const MODEL_CENTERS: Record<ModelTypeMain, [number, number, number]> = {
+  Cells: [48, 22, 0],
+  'Tissues & 3D Models': [-42, 28, 0],
+  'Whole Organ Models': [-38, -36, 0],
+  'Model Organisms': [44, -40, 0],
+};
+
+const JOURNALS = [
+  'Cryobiology',
+  'Biopreservation & Biobanking',
+  'Nature Communications',
+  'Cell Preservation Technology',
+  'PLoS ONE',
+  'Transplantation',
+  'Fertility & Sterility',
+  'CryoLetters',
+  'Scientific Reports',
+  'Tissue Engineering Part C',
 ];
 
-const CATEGORY_CENTERS: Record<string, [number, number, number]> = {
-  'Cryoprotectants': [0, 0, 0],
-  'Vitrification': [40, 25, 0],
-  'Organ Preservation': [-40, 30, 0],
-  'Neural Preservation': [50, -20, 0],
-  'Cardiac Preservation': [-35, -40, 0],
-  'Ice Physics & Thermodynamics': [0, 50, 0],
-  'Rewarming Techniques': [0, -50, 0],
-  'Toxicity & Biocompatibility': [60, 30, 0],
-  'Nanotechnology Methods': [-60, -15, 0],
-  'Clinical Applications': [30, -55, 0]
-};
+const COUNTRIES = ['USA', 'UK', 'Germany', 'Japan', 'Canada', 'Australia', 'South Korea', 'China', 'France', 'Brazil'];
 
-const generatePosition = (category: Category): [number, number, number] => {
-  const randomGaussian = () => {
-    let u = 0, v = 0;
-    while(u === 0) u = Math.random();
-    while(v === 0) v = Math.random();
-    return Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
-  };
+const INSTITUTIONS = [
+  'CryoLab Institute',
+  'University Medical Center',
+  'National Cryo Consortium',
+  'Dept. of Transplant Biology',
+  'Reproductive Science Unit',
+];
 
-  const center = CATEGORY_CENTERS[category] || [0, 0, 0];
-  // 2D spread: wider spread in X and Y, flat in Z
-  return [
-    center[0] + randomGaussian() * 8,
-    center[1] + randomGaussian() * 8,
-    0
+const CPA_TYPES = ['DMSO', 'Glycerol', 'Trehalose', 'EG / DMSO mix', 'Propylene glycol', 'Formamide blend'];
+
+function leafToMain(param: string): ModelTypeMain {
+  for (const block of MODEL_TYPE_TREE) {
+    for (const sub of block.subs) {
+      if (sub.params.includes(param)) return block.main;
+    }
+  }
+  return 'Cells';
+}
+
+function randomGaussian(): number {
+  let u = 0;
+  let v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+}
+
+function generatePosition(main: ModelTypeMain): [number, number, number] {
+  const center = MODEL_CENTERS[main];
+  return [center[0] + randomGaussian() * 9, center[1] + randomGaussian() * 9, 0];
+}
+
+function generateAuthors(): string[] {
+  const firstNames = [
+    'James', 'Sarah', 'Michael', 'Elena', 'David', 'Anna', 'Robert', 'Maria', 'William', 'Linda',
+    'Chen', 'Yuki', 'Aisha', 'Omar', 'Li', 'Wei', 'Sofia', 'Lucas',
   ];
-};
-
-const generateAuthors = () => {
-  const firstNames = ['James', 'Sarah', 'Michael', 'Elena', 'David', 'Anna', 'Robert', 'Maria', 'William', 'Linda', 'Chen', 'Yuki', 'Aisha', 'Omar', 'Li', 'Wei', 'Sofia', 'Lucas'];
-  const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Wang', 'Tanaka', 'Patel', 'Kim', 'Silva', 'Muller', 'Ivanov', 'Ali'];
-  const numAuthors = Math.floor(Math.random() * 5) + 1;
-  const authors = [];
-  for (let i = 0; i < numAuthors; i++) {
-    authors.push(`${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]}`);
+  const lastNames = [
+    'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez',
+    'Martinez', 'Wang', 'Tanaka', 'Patel', 'Kim', 'Silva', 'Muller', 'Ivanov', 'Ali',
+  ];
+  const n = Math.floor(Math.random() * 5) + 1;
+  const authors: string[] = [];
+  for (let i = 0; i < n; i++) {
+    authors.push(
+      `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]}`
+    );
   }
   return authors;
-};
+}
 
-const generatePaper = (id: number, category: Category): Paper => {
-  const year = Math.floor(Math.random() * 37) + 1990; // 1990 - 2026
-  
-  const titles: Record<string, string[]> = {
-    'Cryoprotectants': [
-      'Novel Non-Toxic CPAs', 'DMSO Alternatives in Cryobiology', 'Trehalose Loading in Mammalian Cells',
-      'Synthetic Polymers for Ice Inhibition', 'Osmotic Stress Reduction Strategies', 'Permeating vs Non-Permeating Agents'
-    ],
-    'Vitrification': [
-      'Vitrification of Complex Tissues', 'Cooling Rates for Glass Transition', 'Avoiding Devitrification Post-Thaw',
-      'High-Concentration CPA Cocktails', 'Vitrification in Reproductive Medicine', 'Scaling Vitrification to Large Volumes'
-    ],
-    'Organ Preservation': [
-      'Renal Vitrification and Transplantation', 'Hepatic Cryopreservation Challenges', 'Whole Organ Supercooling',
-      'Vascular Fractures during Cryopreservation', 'Pancreatic Islet Cryostorage', 'Lung Tissue Preservation at -196°C'
-    ],
-    'Neural Preservation': [
-      'Neural Vitrification Techniques', 'Synaptic Preservation in Deep Freeze', 'Cryonic Suspension of Cortical Tissue',
-      'Glial Cell Survival Rates at -196°C', 'Mapping Connectomes Post-Thaw', 'Ischemic Tolerance in Neural Networks'
-    ],
-    'Cardiac Preservation': [
-      'Myocardial Cryopreservation Protocols', 'Cardiomyocyte Survival Post-Thaw', 'Vitrification of Whole Mammalian Hearts',
-      'Preventing Ischemic Injury in Cryonic Hearts', 'Aortic Arch Preservation Techniques', 'Rewarming Protocols for Ventricular Tissue'
-    ],
-    'Ice Physics & Thermodynamics': [
-      'Thermodynamics of Ice Nucleation', 'Fracture Mechanics in Vitrified States', 'Phase Transition Mapping at Cryogenic Temps',
-      'Thermal Stress in Bulk Tissues', 'Heat Transfer Models in Cryopreservation', 'Crystallization Kinetics in Aqueous Solutions'
-    ],
-    'Rewarming Techniques': [
-      'Acoustic Rewarming Technologies', 'Electromagnetic Thawing of Large Volumes', 'Nanowarming using Magnetic Iron Oxide',
-      'Radiofrequency Excitation of Nanoparticles', 'Convective Warming vs Microwave Thawing', 'Preventing Thermal Runaway'
-    ],
-    'Toxicity & Biocompatibility': [
-      'Toxicity Profiles of Permeating CPAs', 'Cellular Apoptosis Post-Thaw', 'Metabolic Recovery after Cryopreservation',
-      'Reducing DMSO Cytotoxicity', 'Biocompatibility of Synthetic Ice Blockers', 'Oxidative Stress in Cryopreserved Cells'
-    ],
-    'Nanotechnology Methods': [
-      'Nanoparticle Warming of Vitrified Tissues', 'Silica Nanoparticles for Ice Inhibition', 'Targeted Delivery of CPAs via Nanocarriers',
-      'Magnetic Nanowarming Protocols', 'Nanoscale Thermal Sensors in Cryobiology', 'Graphene Oxide in Cryopreservation'
-    ],
-    'Clinical Applications': [
-      'Cryobanking of Stem Cells', 'Clinical Outcomes of Vitrified Oocytes', 'Translational Cryobiology in Surgery',
-      'Long-term Storage of Blood Products', 'Cryopreservation in Tissue Engineering', 'Regulatory Challenges in Organ Banking'
-    ]
+function pickOutcomes(): string[] {
+  const k = Math.floor(Math.random() * 3) + 1;
+  const shuffled = [...OUTCOME_METRICS].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, k);
+}
+
+function pickTechniques(): string[] {
+  const k = Math.floor(Math.random() * 4) + 2;
+  const shuffled = [...ALL_TECHNIQUE_TAGS].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, k);
+}
+
+function generatePaper(id: number): Paper {
+  // Cycle evenly through all 21 leaves so each subcategory is well-represented
+  const modelParam = ALL_MODEL_LEAVES[(id - 1) % ALL_MODEL_LEAVES.length];
+  const modelTypeMain = leafToMain(modelParam);
+  const block = MODEL_TYPE_TREE.find((b) => b.main === modelTypeMain)!;
+  const sub = block.subs[0];
+
+  const year = Math.floor(Math.random() * 37) + 1990;
+  const researchType = RESEARCH_TYPES[Math.floor(Math.random() * RESEARCH_TYPES.length)] as ResearchType;
+  const titles: Record<ResearchType, string[]> = {
+    Basic: ['Ice nucleation kinetics', 'Glass transition in CPA matrices', 'Thermal conductivity at cryogenic temps'],
+    Preclinical: ['Porcine renal vitrification', 'Rodent liver nanowarming', 'Organoid cryo-banking'],
+    Clinical: ['Oocyte vitrification outcomes', 'Hematopoietic stem cell banking', 'Islet transplant preservation'],
+    Computational: ['Finite-element rewarming models', 'Machine learning for CPA design', 'Pareto optimization of cooling protocols'],
   };
-
-  const titlePrefix = titles[category][Math.floor(Math.random() * titles[category].length)];
-  const title = `${titlePrefix}: A ${year} Study`;
-
-  const organTypes = ['Brain', 'Heart', 'Kidney', 'Liver', 'Whole Body', 'None'];
-  const techniqueTypes = ['Vitrification', 'Slow Freezing', 'Liquid Ventilation', 'Nanowarming', 'Perfusion'];
-  const publicationTypes = ['Research Paper', 'Journal', 'Preprint', 'Conference Proceeding', 'Technical Report', 'Grey Literature'];
+  const prefix = titles[researchType][Math.floor(Math.random() * titles[researchType].length)];
+  const title = `${prefix}: ${modelParam} focus (${year})`;
 
   return {
     id: `paper-${id}`,
     title,
     authors: generateAuthors(),
-    category,
-    organType: organTypes[Math.floor(Math.random() * organTypes.length)],
-    techniqueType: techniqueTypes[Math.floor(Math.random() * techniqueTypes.length)],
-    publicationType: publicationTypes[Math.floor(Math.random() * publicationTypes.length)],
     year,
-    abstract: `This study explores the challenges and recent advancements in ${category.toLowerCase()} cryopreservation. We present novel methodologies that significantly improve post-thaw viability. Our results indicate a promising direction for future clinical applications.`,
+    abstract: `We evaluate cryopreservation protocols for ${modelParam} under ${researchType.toLowerCase()} conditions, emphasizing technique tags ${pickTechniques().slice(0, 2).join(', ')}. Findings inform CPA loading, warming strategy, and outcome metrics relevant to translational cryobiology.`,
     keyFindings: [
-      `Improved viability by ${Math.floor(Math.random() * 40) + 10}% compared to control.`,
-      `Identified key mechanisms of chilling injury in ${category.toLowerCase()} tissues.`,
-      `Optimized cooling rates for maximum cellular survival.`
+      `Outcome emphasis: ${pickOutcomes()[0] ?? 'viability'}.`,
+      `CPA window centered near ${5 + Math.floor(Math.random() * 25)}% v/v.`,
+      `Storage and warming rates aligned with ${modelTypeMain.toLowerCase()} best practices.`,
     ],
-    citations: [], // Will be populated later
-    position: generatePosition(category)
+    citations: [],
+    position: generatePosition(modelTypeMain),
+    researchType,
+    journalName: JOURNALS[Math.floor(Math.random() * JOURNALS.length)],
+    journalImpactFactor: Math.round((Math.random() * 18 + 1.5) * 10) / 10,
+    openAccess: Math.random() > 0.55,
+    authorInstitution: INSTITUTIONS[Math.floor(Math.random() * INSTITUTIONS.length)],
+    countryRegion: COUNTRIES[Math.floor(Math.random() * COUNTRIES.length)],
+    fundingSource: FUNDING_SOURCES[Math.floor(Math.random() * FUNDING_SOURCES.length)],
+    citationCount: Math.floor(Math.random() * 780) + 2,
+    publicationType: PUBLICATION_TYPES[Math.floor(Math.random() * PUBLICATION_TYPES.length)] as string,
+    modelTypeMain,
+    modelTypeSub: sub.sub,
+    modelParam,
+    techniqueTags: pickTechniques(),
+    cpaType: CPA_TYPES[Math.floor(Math.random() * CPA_TYPES.length)],
+    cpaConcentrationPercent: Math.round((5 + Math.random() * 32) * 10) / 10,
+    outcomes: pickOutcomes(),
+    experimental: {
+      coolingRateCPerMin: Math.round((0.5 + Math.random() * 95) * 10) / 10,
+      warmingRateCPerMin: Math.round((2 + Math.random() * 140) * 10) / 10,
+      storageDurationDays: Math.floor(Math.random() * 3200) + 14,
+      storageTempC: [-196, -80, -20, -4][Math.floor(Math.random() * 4)],
+    },
   };
-};
+}
 
 export const MOCK_PAPERS: Paper[] = [];
 
-// Generate 2000 papers
-for (let i = 1; i <= 2000; i++) {
-  const category = CATEGORIES[i % CATEGORIES.length];
-  MOCK_PAPERS.push(generatePaper(i, category));
+// 2000 papers, ~95 per leaf so every subcategory is well-represented
+const TOTAL_PAPERS = 2000;
+for (let i = 1; i <= TOTAL_PAPERS; i++) {
+  MOCK_PAPERS.push(generatePaper(i));
 }
 
-// Add random citations (edges) with dense intra-cluster and some cross-cluster
-MOCK_PAPERS.forEach(paper => {
-  const numCitations = Math.floor(Math.random() * 6) + 3; // 3 to 8 citations
+MOCK_PAPERS.forEach((paper) => {
+  const numCitations = Math.floor(Math.random() * 6) + 3;
   for (let i = 0; i < numCitations; i++) {
-    // 85% chance to cite within same category, 15% chance for cross-cluster
-    const citeSameCategory = Math.random() < 0.85;
-    let targetPool = citeSameCategory 
-      ? MOCK_PAPERS.filter(p => p.category === paper.category)
-      : MOCK_PAPERS.filter(p => p.category !== paper.category);
-    
+    const citeSameCluster = Math.random() < 0.85;
+    let targetPool = citeSameCluster
+      ? MOCK_PAPERS.filter((p) => p.modelTypeMain === paper.modelTypeMain)
+      : MOCK_PAPERS.filter((p) => p.modelTypeMain !== paper.modelTypeMain);
     if (targetPool.length === 0) targetPool = MOCK_PAPERS;
-
-    const randomPaper = targetPool[Math.floor(Math.random() * targetPool.length)];
-    if (randomPaper.id !== paper.id && !paper.citations.includes(randomPaper.id)) {
-      paper.citations.push(randomPaper.id);
+    const target = targetPool[Math.floor(Math.random() * targetPool.length)];
+    if (target.id !== paper.id && !paper.citations.includes(target.id)) {
+      paper.citations.push(target.id);
     }
   }
 });
 
-// Generate Impact Chains
 export const IMPACT_CHAINS: string[][] = [];
 
-const generateChain = (startCategory: Category, length: number) => {
+function generateChain(startMain: ModelTypeMain, length: number): string[] {
   const chain: string[] = [];
-  let currentPaper = MOCK_PAPERS.find(p => p.category === startCategory);
-  if (!currentPaper) return [];
-  
-  chain.push(currentPaper.id);
-  
+  let current = MOCK_PAPERS.find((p) => p.modelTypeMain === startMain);
+  if (!current) return [];
+  chain.push(current.id);
   for (let i = 1; i < length; i++) {
-    // Try to find a cited paper, or just pick a random paper in the same category to force a chain
-    let nextPaperId = currentPaper.citations.find(id => !chain.includes(id));
-    
-    if (!nextPaperId) {
-      const pool = MOCK_PAPERS.filter(p => p.category === currentPaper!.category && !chain.includes(p.id));
+    let nextId = current.citations.find((id) => !chain.includes(id));
+    if (!nextId) {
+      const pool = MOCK_PAPERS.filter((p) => p.modelTypeMain === current!.modelTypeMain && !chain.includes(p.id));
       if (pool.length > 0) {
-        nextPaperId = pool[Math.floor(Math.random() * pool.length)].id;
-        // Ensure they are connected
-        currentPaper.citations.push(nextPaperId);
+        nextId = pool[Math.floor(Math.random() * pool.length)].id;
+        current!.citations.push(nextId);
       }
     }
-    
-    if (nextPaperId) {
-      chain.push(nextPaperId);
-      currentPaper = MOCK_PAPERS.find(p => p.id === nextPaperId);
-      if (!currentPaper) break;
-    } else {
-      break;
-    }
+    if (nextId) {
+      chain.push(nextId);
+      current = MOCK_PAPERS.find((p) => p.id === nextId);
+      if (!current) break;
+    } else break;
   }
   return chain;
-};
+}
 
-IMPACT_CHAINS.push(generateChain('Vitrification', 5));
-IMPACT_CHAINS.push(generateChain('Toxicity & Biocompatibility', 6));
-IMPACT_CHAINS.push(generateChain('Neural Preservation', 5));
-IMPACT_CHAINS.push(generateChain('Rewarming Techniques', 4));
-IMPACT_CHAINS.push(generateChain('Organ Preservation', 6));
+IMPACT_CHAINS.push(generateChain('Cells', 5));
+IMPACT_CHAINS.push(generateChain('Tissues & 3D Models', 6));
+IMPACT_CHAINS.push(generateChain('Whole Organ Models', 5));
+IMPACT_CHAINS.push(generateChain('Model Organisms', 4));
+IMPACT_CHAINS.push(generateChain('Cells', 6));

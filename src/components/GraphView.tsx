@@ -1,22 +1,16 @@
-import React, { useMemo, useRef, useEffect, useState } from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Html, Line, Text, MapControls } from '@react-three/drei';
+import { Html, Line, Text, MapControls } from '@react-three/drei';
 import * as THREE from 'three';
-import { useAppStore } from '../store';
-import { Paper, Category } from '../types';
+import { useShallow } from 'zustand/react/shallow';
+import { useAppStore, paperFilterSnapshot } from '../store';
+import type { Paper } from '../types';
+import { LEAF_HEX_COLORS, LEAF_HEX_FALLBACK } from '../data/searchSchema';
+import { hasActiveFilters, paperMatchesFilters } from '../utils/paperFilters';
 
-const CATEGORY_COLORS: Record<Category, string> = {
-  'Cryoprotectants': '#a855f7', // purple-500
-  'Vitrification': '#06b6d4', // cyan-500
-  'Organ Preservation': '#3b82f6', // blue-500
-  'Neural Preservation': '#10b981', // emerald-500
-  'Cardiac Preservation': '#f43f5e', // rose-500
-  'Ice Physics & Thermodynamics': '#f59e0b', // amber-500
-  'Rewarming Techniques': '#f97316', // orange-500
-  'Toxicity & Biocompatibility': '#ef4444', // red-500
-  'Nanotechnology Methods': '#6366f1', // indigo-500
-  'Clinical Applications': '#14b8a6' // teal-500
-};
+function nodeColor(paper: Paper): string {
+  return LEAF_HEX_COLORS[paper.modelParam] ?? LEAF_HEX_FALLBACK;
+}
 
 const Nodes = ({ papers, highlightedNodes, selectedPaper, hoveredPaper, onNodeClick, onNodeHover }: any) => {
   const meshRef = useRef<THREE.InstancedMesh>(null);
@@ -45,7 +39,7 @@ const Nodes = ({ papers, highlightedNodes, selectedPaper, hoveredPaper, onNodeCl
       tempObject.updateMatrix();
       meshRef.current!.setMatrixAt(i, tempObject.matrix);
 
-      const baseColor = CATEGORY_COLORS[paper.category as Category];
+      const baseColor = nodeColor(paper);
       tempColor.set(baseColor);
       
       // We can adjust color brightness or just rely on material properties
@@ -129,7 +123,7 @@ const Nodes = ({ papers, highlightedNodes, selectedPaper, hoveredPaper, onNodeCl
         <Html position={hoveredPaper.position} distanceFactor={10} zIndexRange={[100, 0]}>
           <div className="bg-[#1a1a1e]/95 backdrop-blur-md border border-slate-700 text-slate-200 p-2.5 rounded-xl shadow-lg w-56 pointer-events-none transform -translate-x-1/2 -translate-y-full mt-[-12px]">
             <p className="text-sm font-bold truncate">{hoveredPaper.title}</p>
-            <p className="text-[11px] text-slate-400 mt-1 font-medium">{hoveredPaper.year} • {hoveredPaper.category}</p>
+            <p className="text-[11px] text-slate-400 mt-1 font-medium">{hoveredPaper.year} • {hoveredPaper.modelTypeMain} · {hoveredPaper.modelParam}</p>
           </div>
         </Html>
       )}
@@ -151,8 +145,8 @@ const StaticEdges = ({ papers, hasHighlights }: { papers: Paper[], hasHighlights
           points.push(p1.position[0], p1.position[1], 0);
           points.push(p2.position[0], p2.position[1], 0);
 
-          colorObj1.set(CATEGORY_COLORS[p1.category as Category]).multiplyScalar(1.5);
-          colorObj2.set(CATEGORY_COLORS[p2.category as Category]).multiplyScalar(1.5);
+          colorObj1.set(nodeColor(p1)).multiplyScalar(1.5);
+          colorObj2.set(nodeColor(p2)).multiplyScalar(1.5);
 
           colors.push(colorObj1.r, colorObj1.g, colorObj1.b);
           colors.push(colorObj2.r, colorObj2.g, colorObj2.b);
@@ -240,67 +234,57 @@ const HighlightedEdges = ({ papers, highlightedNodes }: { papers: Paper[], highl
   );
 };
 
-const CameraController = ({ controlsRef, userInteracting }: { controlsRef: React.RefObject<any>, userInteracting: React.MutableRefObject<boolean> }) => {
-  const { selectedPaper, highlightedNodes, papers, filters } = useAppStore();
+const CameraController = ({
+  controlsRef,
+  userInteracting,
+  filteredPapers,
+}: {
+  controlsRef: React.RefObject<any>;
+  userInteracting: React.MutableRefObject<boolean>;
+  filteredPapers: Paper[];
+}) => {
   const { camera } = useThree();
+  const selectedPaper = useAppStore((s) => s.selectedPaper);
+  const highlightedNodes = useAppStore((s) => s.highlightedNodes);
 
   useFrame(() => {
-    if (controlsRef.current && !userInteracting.current) {
-      if (selectedPaper) {
-        const targetPos = new THREE.Vector3(selectedPaper.position[0], selectedPaper.position[1], 0);
+    if (!controlsRef.current || userInteracting.current) return;
 
-        const cameraTargetPos = targetPos.clone().add(new THREE.Vector3(0, 0, 15));
-        
-        camera.position.lerp(cameraTargetPos, 0.05);
-        controlsRef.current.target.lerp(targetPos, 0.05);
+    if (selectedPaper) {
+      const targetPos = new THREE.Vector3(selectedPaper.position[0], selectedPaper.position[1], 0);
+      const cameraTargetPos = targetPos.clone().add(new THREE.Vector3(0, 0, 15));
+      camera.position.lerp(cameraTargetPos, 0.05);
+      controlsRef.current.target.lerp(targetPos, 0.05);
+      controlsRef.current.update();
+    } else if (highlightedNodes.length > 0) {
+      const box = new THREE.Box3();
+      const paperById = useAppStore.getState().papers;
+      highlightedNodes.forEach((id) => {
+        const p = paperById.find((p) => p.id === id);
+        if (p) box.expandByPoint(new THREE.Vector3(p.position[0], p.position[1], 0));
+      });
+      if (!box.isEmpty()) {
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const maxDim = Math.max(size.x, size.y, size.z);
+        camera.position.lerp(center.clone().add(new THREE.Vector3(0, 0, Math.max(30, maxDim * 1.5))), 0.03);
+        controlsRef.current.target.lerp(center, 0.03);
         controlsRef.current.update();
-      } else if (highlightedNodes.length > 0) {
-        const box = new THREE.Box3();
-        highlightedNodes.forEach(id => {
-          const p = papers.find(p => p.id === id);
-          if (p) {
-            const pos = new THREE.Vector3(p.position[0], p.position[1], 0);
-            box.expandByPoint(pos);
-          }
-        });
-        
-        if (!box.isEmpty()) {
-          const center = new THREE.Vector3();
-          box.getCenter(center);
-          
-          const size = new THREE.Vector3();
-          box.getSize(size);
-          const maxDim = Math.max(size.x, size.y, size.z);
-          
-          const cameraTargetPos = center.clone().add(new THREE.Vector3(0, 0, Math.max(30, maxDim * 1.5)));
-          
-          camera.position.lerp(cameraTargetPos, 0.03);
-          controlsRef.current.target.lerp(center, 0.03);
-          controlsRef.current.update();
-        }
-      } else if (filters.length > 0) {
-        const box = new THREE.Box3();
-        papers.forEach(p => {
-          if (filters.includes(p.category)) {
-            const pos = new THREE.Vector3(p.position[0], p.position[1], 0);
-            box.expandByPoint(pos);
-          }
-        });
-        
-        if (!box.isEmpty()) {
-          const center = new THREE.Vector3();
-          box.getCenter(center);
-          
-          const size = new THREE.Vector3();
-          box.getSize(size);
-          const maxDim = Math.max(size.x, size.y, size.z);
-          
-          const cameraTargetPos = center.clone().add(new THREE.Vector3(0, 0, Math.max(30, maxDim * 1.5)));
-          
-          camera.position.lerp(cameraTargetPos, 0.03);
-          controlsRef.current.target.lerp(center, 0.03);
-          controlsRef.current.update();
-        }
+      }
+    } else if (filteredPapers.length > 0 && filteredPapers.length < useAppStore.getState().papers.length) {
+      const box = new THREE.Box3();
+      filteredPapers.forEach((p) => box.expandByPoint(new THREE.Vector3(p.position[0], p.position[1], 0)));
+      if (!box.isEmpty()) {
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const maxDim = Math.max(size.x, size.y, size.z);
+        camera.position.lerp(center.clone().add(new THREE.Vector3(0, 0, Math.max(30, maxDim * 1.5))), 0.03);
+        controlsRef.current.target.lerp(center, 0.03);
+        controlsRef.current.update();
       }
     }
   });
@@ -308,36 +292,23 @@ const CameraController = ({ controlsRef, userInteracting }: { controlsRef: React
 };
 
 export const GraphView: React.FC = () => {
-  const { 
-    papers, 
-    searchQuery, 
-    filters, 
-    organFilters,
-    techniqueFilters,
-    publicationFilters,
-    selectedPaper, 
-    setSelectedPaper,
-    hoveredPaper,
-    setHoveredPaper,
-    highlightedNodes,
-    yearRange,
-  } = useAppStore();
+  // Shallow-compare the filter snapshot so filteredPapers only recomputes when
+  // an actual filter value changes, not on every hover/selection update.
+  const filterState = useAppStore(useShallow(paperFilterSnapshot));
+  const papers = useAppStore((s) => s.papers);
+  const selectedPaper = useAppStore((s) => s.selectedPaper);
+  const setSelectedPaper = useAppStore((s) => s.setSelectedPaper);
+  const hoveredPaper = useAppStore((s) => s.hoveredPaper);
+  const setHoveredPaper = useAppStore((s) => s.setHoveredPaper);
+  const highlightedNodes = useAppStore((s) => s.highlightedNodes);
+
+  const filteredPapers = useMemo(
+    () => papers.filter((p) => paperMatchesFilters(p, filterState)),
+    [papers, filterState]
+  );
 
   const controlsRef = useRef<any>(null);
   const userInteracting = useRef(false);
-
-  const filteredPapers = useMemo(() => {
-    return papers.filter(p => {
-      const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            p.authors.some(a => a.toLowerCase().includes(searchQuery.toLowerCase()));
-      const matchesCategory = filters.length === 0 || filters.includes(p.category);
-      const matchesOrgan = organFilters.length === 0 || organFilters.includes(p.organType);
-      const matchesTechnique = techniqueFilters.length === 0 || techniqueFilters.includes(p.techniqueType);
-      const matchesPublication = publicationFilters.length === 0 || publicationFilters.includes(p.publicationType);
-      const matchesYear = p.year >= yearRange[0] && p.year <= yearRange[1];
-      return matchesSearch && matchesCategory && matchesOrgan && matchesTechnique && matchesPublication && matchesYear;
-    });
-  }, [papers, searchQuery, filters, organFilters, techniqueFilters, publicationFilters, yearRange]);
 
   const hasHighlights = highlightedNodes.length > 0;
 
@@ -384,7 +355,7 @@ export const GraphView: React.FC = () => {
           })}
         </group>
         
-        <CameraController controlsRef={controlsRef} userInteracting={userInteracting} />
+        <CameraController controlsRef={controlsRef} userInteracting={userInteracting} filteredPapers={filteredPapers} />
         <MapControls 
           ref={controlsRef}
           enablePan={true}

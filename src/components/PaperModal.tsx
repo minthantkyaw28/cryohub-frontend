@@ -24,9 +24,15 @@ export const PaperModal: React.FC = () => {
         {/* Header */}
         <div className="flex items-start justify-between p-5 border-b border-slate-800 bg-[#1a1a1e]/50">
           <div className="pr-4">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700 shadow-sm">
-                {selectedPaper.category}
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-pink-500/15 text-pink-300 border border-pink-500/30 shadow-sm">
+                {selectedPaper.modelTypeMain}
+              </span>
+              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700 shadow-sm">
+                {selectedPaper.modelParam}
+              </span>
+              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-sky-500/10 text-sky-300 border border-sky-500/25">
+                {selectedPaper.researchType}
               </span>
               <span className="flex items-center gap-1 text-xs font-medium text-slate-400">
                 <Calendar size={12} /> {selectedPaper.year}
@@ -39,6 +45,14 @@ export const PaperModal: React.FC = () => {
               <Users size={14} />
               <p className="truncate">{selectedPaper.authors.join(', ')}</p>
             </div>
+            <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
+              {selectedPaper.journalName} · IF {selectedPaper.journalImpactFactor.toFixed(1)} ·{' '}
+              {selectedPaper.openAccess ? 'Open access' : 'Closed access'} · {selectedPaper.publicationType} ·{' '}
+              {selectedPaper.citationCount} citations
+            </p>
+            <p className="text-[11px] text-slate-600 mt-1">
+              {selectedPaper.authorInstitution} · {selectedPaper.countryRegion} · Funding: {selectedPaper.fundingSource}
+            </p>
           </div>
           <button 
             onClick={() => setSelectedPaper(null)}
@@ -51,6 +65,59 @@ export const PaperModal: React.FC = () => {
         {/* Body */}
         <div className="p-5 overflow-y-auto flex-1 space-y-6 text-slate-400 bg-[#0f0f11]/50">
           
+          <section>
+            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5 mb-2">
+              Techniques & CPA
+            </h3>
+            <div className="flex flex-wrap gap-1.5">
+              {selectedPaper.techniqueTags.map((t) => (
+                <span
+                  key={t}
+                  className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-cyan-500/10 text-cyan-300 border border-cyan-500/20"
+                >
+                  {t}
+                </span>
+              ))}
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-violet-500/10 text-violet-300 border border-violet-500/20">
+                {selectedPaper.cpaType} ({selectedPaper.cpaConcentrationPercent}%)
+              </span>
+            </div>
+          </section>
+
+          <section>
+            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5 mb-2">
+              Outcomes
+            </h3>
+            <div className="flex flex-wrap gap-1.5">
+              {selectedPaper.outcomes.map((o) => (
+                <span
+                  key={o}
+                  className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
+                >
+                  {o}
+                </span>
+              ))}
+            </div>
+          </section>
+
+          <section>
+            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Experimental</h3>
+            <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-400 font-medium">
+              <div className="bg-[#1a1a1e] p-2 rounded-lg border border-slate-800">
+                Cooling {selectedPaper.experimental.coolingRateCPerMin} °C/min
+              </div>
+              <div className="bg-[#1a1a1e] p-2 rounded-lg border border-slate-800">
+                Warming {selectedPaper.experimental.warmingRateCPerMin} °C/min
+              </div>
+              <div className="bg-[#1a1a1e] p-2 rounded-lg border border-slate-800">
+                Storage {selectedPaper.experimental.storageDurationDays} d
+              </div>
+              <div className="bg-[#1a1a1e] p-2 rounded-lg border border-slate-800">
+                Temp {selectedPaper.experimental.storageTempC} °C
+              </div>
+            </div>
+          </section>
+
           {/* Abstract */}
           <section>
             <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5 mb-2">

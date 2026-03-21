@@ -1,264 +1,593 @@
 import React, { useState } from 'react';
-import { Filter, Bookmark, Brain, Heart, Activity, Droplet, Zap, ThermometerSnowflake, ShieldAlert, Microscope, Stethoscope, Layers, ChevronDown, ChevronRight, Calendar } from 'lucide-react';
-import { useAppStore } from '../store';
-import { Category } from '../types';
+import {
+  ChevronDown,
+  ChevronRight,
+  SlidersHorizontal,
+  ThermometerSnowflake,
+  Target,
+  FlaskConical,
+  BookMarked,
+  Microscope,
+} from 'lucide-react';
 import { clsx } from 'clsx';
+import { useAppStore } from '../store';
+import {
+  FUNDING_SOURCES,
+  LEAF_HEX_COLORS,
+  MODEL_TYPE_TREE,
+  OUTCOME_METRICS,
+  PUBLICATION_TYPES,
+  RESEARCH_TYPES,
+  SECTION_ACCENTS,
+  TECHNIQUE_GROUPS,
+} from '../data/searchSchema';
+import { DEFAULT_FILTER_RANGES } from '../utils/paperFilters';
 
-const CATEGORY_COLORS: Record<Category, string> = {
-  'Cryoprotectants': 'text-purple-500',
-  'Vitrification': 'text-cyan-500',
-  'Organ Preservation': 'text-blue-500',
-  'Neural Preservation': 'text-emerald-500',
-  'Cardiac Preservation': 'text-rose-500',
-  'Ice Physics & Thermodynamics': 'text-amber-500',
-  'Rewarming Techniques': 'text-orange-500',
-  'Toxicity & Biocompatibility': 'text-red-500',
-  'Nanotechnology Methods': 'text-indigo-500',
-  'Clinical Applications': 'text-teal-500'
-};
+type SectionKey = 'search' | 'techniques' | 'outcomes' | 'experimental' | 'publication' | 'model';
 
-const CATEGORY_BG_COLORS: Record<Category, string> = {
-  'Cryoprotectants': 'bg-purple-500',
-  'Vitrification': 'bg-cyan-500',
-  'Organ Preservation': 'bg-blue-500',
-  'Neural Preservation': 'bg-emerald-500',
-  'Cardiac Preservation': 'bg-rose-500',
-  'Ice Physics & Thermodynamics': 'bg-amber-500',
-  'Rewarming Techniques': 'bg-orange-500',
-  'Toxicity & Biocompatibility': 'bg-red-500',
-  'Nanotechnology Methods': 'bg-indigo-500',
-  'Clinical Applications': 'bg-teal-500'
-};
+function DualRange({
+  label,
+  min,
+  max,
+  step,
+  low,
+  high,
+  onLow,
+  onHigh,
+  format = (n: number) => String(n),
+}: {
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+  low: number;
+  high: number;
+  onLow: (v: number) => void;
+  onHigh: (v: number) => void;
+  format?: (n: number) => string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex justify-between text-[10px] text-slate-500 font-semibold uppercase tracking-wide">
+        <span>{label}</span>
+        <span className="text-slate-400 font-mono normal-case">
+          {format(low)} – {format(high)}
+        </span>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={low}
+        onChange={(e) => {
+          const v = +e.target.value;
+          if (v <= high) onLow(v);
+        }}
+        className="w-full accent-sky-500 cursor-pointer h-1.5"
+      />
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={high}
+        onChange={(e) => {
+          const v = +e.target.value;
+          if (v >= low) onHigh(v);
+        }}
+        className="w-full accent-sky-500 cursor-pointer h-1.5"
+      />
+    </div>
+  );
+}
 
-const CATEGORY_ICONS: Record<Category, React.ReactNode> = {
-  'Cryoprotectants': <Droplet size={16} />,
-  'Vitrification': <Layers size={16} />,
-  'Organ Preservation': <Activity size={16} />,
-  'Neural Preservation': <Brain size={16} />,
-  'Cardiac Preservation': <Heart size={16} />,
-  'Ice Physics & Thermodynamics': <ThermometerSnowflake size={16} />,
-  'Rewarming Techniques': <Zap size={16} />,
-  'Toxicity & Biocompatibility': <ShieldAlert size={16} />,
-  'Nanotechnology Methods': <Microscope size={16} />,
-  'Clinical Applications': <Stethoscope size={16} />
-};
+function ToggleRow({
+  label,
+  active,
+  onClick,
+  dotClass,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  dotClass: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={clsx(
+        'w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-all font-medium border',
+        active
+          ? 'bg-[#1a1a1e] border-slate-600 text-slate-100'
+          : 'bg-transparent border-transparent hover:bg-white/5 text-slate-400 hover:text-slate-200'
+      )}
+    >
+      <span className="flex items-center gap-2 min-w-0">
+        <span className={clsx('w-2 h-2 rounded-full shrink-0', dotClass)} />
+        <span className="truncate text-left">{label}</span>
+      </span>
+      {active && <span className="w-1.5 h-1.5 rounded-full bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.7)] shrink-0" />}
+    </button>
+  );
+}
 
-const ORGAN_TYPES = ['Brain', 'Heart', 'Kidney', 'Liver', 'Whole Body', 'None'];
-const TECHNIQUE_TYPES = ['Vitrification', 'Slow Freezing', 'Liquid Ventilation', 'Nanowarming', 'Perfusion'];
-const PUBLICATION_TYPES = ['Research Paper', 'Journal', 'Preprint', 'Conference Proceeding', 'Technical Report', 'Grey Literature'];
+function SectionHeader({
+  title,
+  icon,
+  accent,
+  open,
+  onToggle,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  accent: (typeof SECTION_ACCENTS)[SectionKey];
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={clsx(
+        'w-full flex items-center gap-2 px-1 py-1 rounded-lg -mx-1 hover:bg-white/[0.04] transition-colors text-left'
+      )}
+    >
+      <span className={clsx('w-1 self-stretch min-h-[18px] rounded-full shrink-0', accent.bar)} />
+      <span className={accent.text}>{icon}</span>
+      <span className={clsx('flex-1 text-[11px] font-bold uppercase tracking-wider', accent.text)}>{title}</span>
+      {open ? <ChevronDown size={14} className="text-slate-500 shrink-0" /> : <ChevronRight size={14} className="text-slate-500 shrink-0" />}
+    </button>
+  );
+}
 
 export const Sidebar: React.FC = () => {
-  const { 
-    filters, toggleFilter,
-    organFilters, toggleOrganFilter,
-    techniqueFilters, toggleTechniqueFilter,
-    publicationFilters, togglePublicationFilter,
+  const {
     isSidebarOpen,
-    yearRange, setYearRange,
+    researchTypeFilters,
+    toggleResearchTypeFilter,
+    fundingFilters,
+    toggleFundingFilter,
+    openAccess,
+    setOpenAccess,
+    journalQuery,
+    setJournalQuery,
+    authorInstitutionQuery,
+    setAuthorInstitutionQuery,
+    countryQuery,
+    setCountryQuery,
+    cpaTypeQuery,
+    setCpaTypeQuery,
+    impactFactorRange,
+    setImpactFactorRange,
+    citationCountRange,
+    setCitationCountRange,
+    cpaConcRange,
+    setCpaConcRange,
+    coolingRateRange,
+    setCoolingRateRange,
+    warmingRateRange,
+    setWarmingRateRange,
+    storageDaysRange,
+    setStorageDaysRange,
+    storageTempRange,
+    setStorageTempRange,
+    yearRange,
+    setYearRange,
+    techniqueFilters,
+    toggleTechniqueFilter,
+    outcomeFilters,
+    toggleOutcomeFilter,
+    modelLeafFilters,
+    toggleModelLeafFilter,
+    publicationFilters,
+    togglePublicationFilter,
   } = useAppStore();
 
-  const [isClustersOpen, setIsClustersOpen] = useState(true);
-  const [isOrgansOpen, setIsOrgansOpen] = useState(false);
-  const [isTechniquesOpen, setIsTechniquesOpen] = useState(false);
-  const [isPublicationsOpen, setIsPublicationsOpen] = useState(false);
-  const [isYearOpen, setIsYearOpen] = useState(false);
+  const [sec, setSec] = useState<Record<SectionKey, boolean>>({
+    search: true,
+    techniques: true,
+    outcomes: false,
+    experimental: false,
+    publication: false,
+    model: true,
+  });
+
+  const [techOpen, setTechOpen] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(TECHNIQUE_GROUPS.map((g) => [g.id, false]))
+  );
+
+  const [modelMainOpen, setModelMainOpen] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(MODEL_TYPE_TREE.map((b) => [b.main, true]))
+  );
+
+  const d = DEFAULT_FILTER_RANGES;
+
+  const researchDots = ['bg-sky-500', 'bg-indigo-500', 'bg-violet-500', 'bg-fuchsia-500'];
+  const fundingDots = ['bg-amber-500', 'bg-teal-500', 'bg-emerald-500'];
 
   return (
-    <aside className={clsx(
-      "absolute left-0 top-0 h-full w-72",
-      "bg-[#0a0a0d]/97 backdrop-blur-2xl border-r border-slate-800/50",
-      "flex flex-col p-4 text-slate-400",
-      "shadow-[4px_0_24px_rgba(0,0,0,0.3)] z-20 overflow-y-auto overflow-x-hidden scrollbar-hide",
-      "transition-transform duration-300 ease-in-out",
-      (isSidebarOpen) ? 'translate-x-0' : '-translate-x-full'
-    )}>
+    <aside
+      className={clsx(
+        'absolute left-0 top-0 h-full w-80',
+        'bg-[#0a0a0d]/97 backdrop-blur-2xl border-r border-slate-800/50',
+        'flex flex-col p-3 text-slate-400',
+        'shadow-[4px_0_24px_rgba(0,0,0,0.3)] z-20 overflow-y-auto overflow-x-hidden scrollbar-hide',
+        'transition-transform duration-300 ease-in-out',
+        isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      )}
+    >
+      <div className="flex-1 space-y-5 pb-6">
+        {/* Search config */}
+        <div className="space-y-2">
+          <SectionHeader
+            title="Search config"
+            icon={<SlidersHorizontal size={14} />}
+            accent={SECTION_ACCENTS.search}
+            open={sec.search}
+            onToggle={() => setSec((s) => ({ ...s, search: !s.search }))}
+          />
+          {sec.search && (
+            <div className="mt-2 ml-2 pl-2 border-l border-sky-500/25 space-y-3">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Research type</p>
+              <div className="space-y-0.5">
+                {RESEARCH_TYPES.map((t, i) => (
+                  <ToggleRow
+                    key={t}
+                    label={t}
+                    active={researchTypeFilters.includes(t)}
+                    onClick={() => toggleResearchTypeFilter(t)}
+                    dotClass={researchDots[i % researchDots.length]}
+                  />
+                ))}
+              </div>
 
-      <div className="flex-1 space-y-6">
-        {/* Clusters / Research Fields */}
-        <div>
-          <button 
-            onClick={() => setIsClustersOpen(!isClustersOpen)}
-            className="w-full flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 hover:text-slate-300 transition-colors"
-          >
-            <span className="flex items-center gap-2"><Filter size={14} /> Research Fields</span>
-            {isClustersOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          </button>
-          {isClustersOpen && (
-            <div className="space-y-1.5 mt-3">
-              {(Object.keys(CATEGORY_COLORS) as Category[]).map((category) => (
-                <button
-                  key={category}
-                  onClick={() => toggleFilter(category)}
-                  className={clsx(
-                    "w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm transition-all font-medium border",
-                    filters.includes(category) 
-                      ? "bg-[#1a1a1e] border-slate-700 text-slate-200 shadow-sm" 
-                      : "bg-transparent border-transparent hover:bg-white/5 text-slate-400 hover:text-slate-200"
-                  )}
-                >
-                  <div className="flex items-center gap-2.5 truncate">
-                    <span className={`w-2.5 h-2.5 rounded-full ${CATEGORY_BG_COLORS[category]} shrink-0`} />
-                    <span className={CATEGORY_COLORS[category]}>{CATEGORY_ICONS[category]}</span>
-                    <span className="truncate">{category}</span>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider pt-1">Publication year</p>
+              <DualRange
+                label="Range"
+                min={d.year[0]}
+                max={d.year[1]}
+                step={1}
+                low={yearRange[0]}
+                high={yearRange[1]}
+                onLow={(v) => setYearRange([v, yearRange[1]])}
+                onHigh={(v) => setYearRange([yearRange[0], v])}
+              />
+
+              <label className="block space-y-1">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Journal name</span>
+                <input
+                  value={journalQuery}
+                  onChange={(e) => setJournalQuery(e.target.value)}
+                  placeholder="Enter name"
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-[#121216] border border-slate-800 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-sky-500/40"
+                />
+              </label>
+
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Journal impact factor</p>
+              <DualRange
+                label="IF range"
+                min={d.impactFactor[0]}
+                max={d.impactFactor[1]}
+                step={0.5}
+                low={impactFactorRange[0]}
+                high={impactFactorRange[1]}
+                onLow={(v) => setImpactFactorRange([v, impactFactorRange[1]])}
+                onHigh={(v) => setImpactFactorRange([impactFactorRange[0], v])}
+                format={(n) => n.toFixed(1)}
+              />
+
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Open access</p>
+              <div className="flex gap-1">
+                {(['any', 'yes', 'no'] as const).map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setOpenAccess(k)}
+                    className={clsx(
+                      'flex-1 py-1.5 rounded-lg text-[11px] font-semibold border transition-all',
+                      openAccess === k
+                        ? 'bg-sky-500/20 border-sky-500/50 text-sky-200'
+                        : 'border-slate-800 text-slate-500 hover:border-slate-600'
+                    )}
+                  >
+                    {k === 'any' ? 'All' : k === 'yes' ? 'Yes' : 'No'}
+                  </button>
+                ))}
+              </div>
+
+              <label className="block space-y-1">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Author / Institution</span>
+                <input
+                  value={authorInstitutionQuery}
+                  onChange={(e) => setAuthorInstitutionQuery(e.target.value)}
+                  placeholder="Enter name"
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-[#121216] border border-slate-800 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-sky-500/40"
+                />
+              </label>
+
+              <label className="block space-y-1">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Country / Region</span>
+                <input
+                  value={countryQuery}
+                  onChange={(e) => setCountryQuery(e.target.value)}
+                  placeholder="Enter name"
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-[#121216] border border-slate-800 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-sky-500/40"
+                />
+              </label>
+
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Funding source</p>
+              <div className="space-y-0.5">
+                {FUNDING_SOURCES.map((f, i) => (
+                  <ToggleRow
+                    key={f}
+                    label={f}
+                    active={fundingFilters.includes(f)}
+                    onClick={() => toggleFundingFilter(f)}
+                    dotClass={fundingDots[i % fundingDots.length]}
+                  />
+                ))}
+              </div>
+
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Citations</p>
+              <DualRange
+                label="Citation count"
+                min={d.citationCount[0]}
+                max={d.citationCount[1]}
+                step={5}
+                low={citationCountRange[0]}
+                high={citationCountRange[1]}
+                onLow={(v) => setCitationCountRange([v, citationCountRange[1]])}
+                onHigh={(v) => setCitationCountRange([citationCountRange[0], v])}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Techniques */}
+        <div className="space-y-2">
+          <SectionHeader
+            title="Techniques"
+            icon={<ThermometerSnowflake size={14} />}
+            accent={SECTION_ACCENTS.techniques}
+            open={sec.techniques}
+            onToggle={() => setSec((s) => ({ ...s, techniques: !s.techniques }))}
+          />
+          {sec.techniques && (
+            <div className="mt-2 ml-2 pl-2 border-l border-cyan-500/25 space-y-2">
+              <label className="block space-y-1">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Cryoprotectant — CPA type</span>
+                <input
+                  value={cpaTypeQuery}
+                  onChange={(e) => setCpaTypeQuery(e.target.value)}
+                  placeholder="e.g. DMSO, trehalose"
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-[#121216] border border-slate-800 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-cyan-500/40"
+                />
+              </label>
+
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">CPA concentration (% v/v)</p>
+              <DualRange
+                label="Range"
+                min={d.cpaConc[0]}
+                max={d.cpaConc[1]}
+                step={0.5}
+                low={cpaConcRange[0]}
+                high={cpaConcRange[1]}
+                onLow={(v) => setCpaConcRange([v, cpaConcRange[1]])}
+                onHigh={(v) => setCpaConcRange([cpaConcRange[0], v])}
+                format={(n) => `${n}%`}
+              />
+
+              {TECHNIQUE_GROUPS.map((group, gi) => {
+                const palette = ['bg-cyan-500', 'bg-blue-500', 'bg-teal-500', 'bg-emerald-500'];
+                const dot = palette[gi % palette.length];
+                const isOpen = techOpen[group.id];
+                return (
+                  <div key={group.id} className="rounded-lg border border-slate-800/80 overflow-hidden bg-[#0c0c10]/80">
+                    <button
+                      type="button"
+                      onClick={() => setTechOpen((o) => ({ ...o, [group.id]: !isOpen }))}
+                      className="w-full flex items-center justify-between px-2 py-1.5 text-[11px] font-bold text-cyan-300/90 uppercase tracking-wide hover:bg-white/5"
+                    >
+                      <span className="flex items-center gap-2">
+                        <span className={clsx('w-1.5 h-1.5 rounded-full', dot)} />
+                        {group.label}
+                      </span>
+                      {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    </button>
+                    {isOpen && (
+                      <div className="px-1.5 pb-1.5 space-y-0.5 border-t border-slate-800/60 pt-1">
+                        {group.items.map((item) => (
+                          <ToggleRow
+                            key={item}
+                            label={item}
+                            active={techniqueFilters.includes(item)}
+                            onClick={() => toggleTechniqueFilter(item)}
+                            dotClass={dot}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  {filters.includes(category) && <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)] shrink-0" />}
-                </button>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
 
-        {/* Organ Type */}
-        <div>
-          <button 
-            onClick={() => setIsOrgansOpen(!isOrgansOpen)}
-            className="w-full flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 hover:text-slate-300 transition-colors"
-          >
-            <span className="flex items-center gap-2"><Activity size={14} /> Organ Type</span>
-            {isOrgansOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          </button>
-          {isOrgansOpen && (
-            <div className="space-y-1.5 mt-3">
-              {ORGAN_TYPES.map((organ) => (
-                <button
-                  key={organ}
-                  onClick={() => toggleOrganFilter(organ)}
-                  className={clsx(
-                    "w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm transition-all font-medium border",
-                    organFilters.includes(organ) 
-                      ? "bg-[#1a1a1e] border-slate-700 text-slate-200 shadow-sm" 
-                      : "bg-transparent border-transparent hover:bg-white/5 text-slate-400 hover:text-slate-200"
-                  )}
-                >
-                  <span className="truncate">{organ}</span>
-                  {organFilters.includes(organ) && <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)] shrink-0" />}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Cryo/Stasis Techniques */}
-        <div>
-          <button 
-            onClick={() => setIsTechniquesOpen(!isTechniquesOpen)}
-            className="w-full flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 hover:text-slate-300 transition-colors"
-          >
-            <span className="flex items-center gap-2"><ThermometerSnowflake size={14} /> Techniques</span>
-            {isTechniquesOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          </button>
-          {isTechniquesOpen && (
-            <div className="space-y-1.5 mt-3">
-              {TECHNIQUE_TYPES.map((tech) => (
-                <button
-                  key={tech}
-                  onClick={() => toggleTechniqueFilter(tech)}
-                  className={clsx(
-                    "w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm transition-all font-medium border",
-                    techniqueFilters.includes(tech) 
-                      ? "bg-[#1a1a1e] border-slate-700 text-slate-200 shadow-sm" 
-                      : "bg-transparent border-transparent hover:bg-white/5 text-slate-400 hover:text-slate-200"
-                  )}
-                >
-                  <span className="truncate">{tech}</span>
-                  {techniqueFilters.includes(tech) && <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)] shrink-0" />}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Publication Type */}
-        <div>
-          <button 
-            onClick={() => setIsPublicationsOpen(!isPublicationsOpen)}
-            className="w-full flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 hover:text-slate-300 transition-colors"
-          >
-            <span className="flex items-center gap-2"><Bookmark size={14} /> Publication Type</span>
-            {isPublicationsOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          </button>
-          {isPublicationsOpen && (
-            <div className="space-y-1.5 mt-3">
-              {PUBLICATION_TYPES.map((pub) => (
-                <button
-                  key={pub}
-                  onClick={() => togglePublicationFilter(pub)}
-                  className={clsx(
-                    "w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm transition-all font-medium border",
-                    publicationFilters.includes(pub) 
-                      ? "bg-[#1a1a1e] border-slate-700 text-slate-200 shadow-sm" 
-                      : "bg-transparent border-transparent hover:bg-white/5 text-slate-400 hover:text-slate-200"
-                  )}
-                >
-                  <span className="truncate">{pub}</span>
-                  {publicationFilters.includes(pub) && <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)] shrink-0" />}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Year Range */}
-        <div>
-          <button
-            onClick={() => setIsYearOpen(!isYearOpen)}
-            className="w-full flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 hover:text-slate-300 transition-colors"
-          >
-            <span className="flex items-center gap-2"><Calendar size={14} /> Year Range</span>
-            {isYearOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          </button>
-          {isYearOpen && (
-            <div className="mt-3 px-1 space-y-3">
-              <div className="flex justify-between text-xs text-slate-400 font-medium">
-                <span>{yearRange[0]}</span>
-                <span>{yearRange[1]}</span>
-              </div>
-              <div className="space-y-2">
-                <input
-                  type="range"
-                  min={1990}
-                  max={2026}
-                  value={yearRange[0]}
-                  onChange={(e) => {
-                    const val = +e.target.value;
-                    if (val < yearRange[1]) setYearRange([val, yearRange[1]]);
-                  }}
-                  className="w-full accent-blue-500 cursor-pointer"
+        {/* Outcomes */}
+        <div className="space-y-2">
+          <SectionHeader
+            title="Outcomes & metrics"
+            icon={<Target size={14} />}
+            accent={SECTION_ACCENTS.outcomes}
+            open={sec.outcomes}
+            onToggle={() => setSec((s) => ({ ...s, outcomes: !s.outcomes }))}
+          />
+          {sec.outcomes && (
+            <div className="mt-2 ml-2 pl-2 border-l border-emerald-500/25 space-y-0.5">
+              {OUTCOME_METRICS.map((o, i) => (
+                <ToggleRow
+                  key={o}
+                  label={o}
+                  active={outcomeFilters.includes(o)}
+                  onClick={() => toggleOutcomeFilter(o)}
+                  dotClass={['bg-emerald-500', 'bg-green-500', 'bg-lime-500', 'bg-teal-500', 'bg-cyan-500'][i % 5]}
                 />
-                <input
-                  type="range"
-                  min={1990}
-                  max={2026}
-                  value={yearRange[1]}
-                  onChange={(e) => {
-                    const val = +e.target.value;
-                    if (val > yearRange[0]) setYearRange([yearRange[0], val]);
-                  }}
-                  className="w-full accent-blue-500 cursor-pointer"
-                />
-              </div>
+              ))}
             </div>
           )}
         </div>
-      </div>
 
-      <div className="mt-8 shrink-0">
-        <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2">
-          <Bookmark size={14} /> Saved Queries
-        </h2>
-        <ul className="space-y-1.5 text-sm text-slate-400">
-          {['Vitrification vs Slow Freezing', 'Toxicity of DMSO in neural tissue', 'Ice recrystallization inhibitors'].map((q, i) => (
-            <li 
-              key={i} 
-              onClick={() => {
-                useAppStore.getState().submitQuery(q);
-              }}
-              className="hover:text-slate-200 hover:bg-white/5 px-3 py-2 rounded-lg cursor-pointer truncate transition-all font-medium border border-transparent hover:border-slate-700/60"
-            >
-              "{q}"
-            </li>
-          ))}
-        </ul>
+        {/* Experimental */}
+        <div className="space-y-2">
+          <SectionHeader
+            title="Experimental conditions"
+            icon={<FlaskConical size={14} />}
+            accent={SECTION_ACCENTS.experimental}
+            open={sec.experimental}
+            onToggle={() => setSec((s) => ({ ...s, experimental: !s.experimental }))}
+          />
+          {sec.experimental && (
+            <div className="mt-2 ml-2 pl-2 border-l border-amber-500/25 space-y-3">
+              <DualRange
+                label="Cooling rate (°C/min)"
+                min={d.coolingRate[0]}
+                max={d.coolingRate[1]}
+                step={0.5}
+                low={coolingRateRange[0]}
+                high={coolingRateRange[1]}
+                onLow={(v) => setCoolingRateRange([v, coolingRateRange[1]])}
+                onHigh={(v) => setCoolingRateRange([coolingRateRange[0], v])}
+              />
+              <DualRange
+                label="Warming rate (°C/min)"
+                min={d.warmingRate[0]}
+                max={d.warmingRate[1]}
+                step={0.5}
+                low={warmingRateRange[0]}
+                high={warmingRateRange[1]}
+                onLow={(v) => setWarmingRateRange([v, warmingRateRange[1]])}
+                onHigh={(v) => setWarmingRateRange([warmingRateRange[0], v])}
+              />
+              <DualRange
+                label="Storage duration (days)"
+                min={d.storageDays[0]}
+                max={d.storageDays[1]}
+                step={10}
+                low={storageDaysRange[0]}
+                high={storageDaysRange[1]}
+                onLow={(v) => setStorageDaysRange([v, storageDaysRange[1]])}
+                onHigh={(v) => setStorageDaysRange([storageDaysRange[0], v])}
+              />
+              <DualRange
+                label="Storage temp (°C)"
+                min={d.storageTemp[0]}
+                max={d.storageTemp[1]}
+                step={1}
+                low={storageTempRange[0]}
+                high={storageTempRange[1]}
+                onLow={(v) => setStorageTempRange([v, storageTempRange[1]])}
+                onHigh={(v) => setStorageTempRange([storageTempRange[0], v])}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Publication type */}
+        <div className="space-y-2">
+          <SectionHeader
+            title="Publication type"
+            icon={<BookMarked size={14} />}
+            accent={SECTION_ACCENTS.publication}
+            open={sec.publication}
+            onToggle={() => setSec((s) => ({ ...s, publication: !s.publication }))}
+          />
+          {sec.publication && (
+            <div className="mt-2 ml-2 pl-2 border-l border-violet-500/25 space-y-0.5">
+              {PUBLICATION_TYPES.map((p, i) => (
+                <ToggleRow
+                  key={p}
+                  label={p}
+                  active={publicationFilters.includes(p)}
+                  onClick={() => togglePublicationFilter(p)}
+                  dotClass={['bg-violet-500', 'bg-purple-500', 'bg-indigo-500', 'bg-fuchsia-500'][i % 4]}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Model type — two levels: main → leaf params (sub-level skipped, same name) */}
+        <div className="space-y-2">
+          <SectionHeader
+            title="Model type"
+            icon={<Microscope size={14} />}
+            accent={SECTION_ACCENTS.model}
+            open={sec.model}
+            onToggle={() => setSec((s) => ({ ...s, model: !s.model }))}
+          />
+          {sec.model && (
+            <div className="mt-2 ml-2 pl-2 border-l border-fuchsia-500/25 space-y-1.5">
+              {MODEL_TYPE_TREE.map((block) => {
+                const tw = {
+                  Cells:                { text: 'text-rose-400',    border: 'border-rose-500/25'    },
+                  'Tissues & 3D Models':{ text: 'text-cyan-400',    border: 'border-cyan-500/25'    },
+                  'Whole Organ Models': { text: 'text-orange-400',  border: 'border-orange-500/25'  },
+                  'Model Organisms':    { text: 'text-emerald-400', border: 'border-emerald-500/25' },
+                }[block.main];
+                const mainOpen = modelMainOpen[block.main];
+                // Collect all params directly (skip the redundant single-sub layer)
+                const allParams = block.subs.flatMap((s) => s.params);
+                return (
+                  <div key={block.main} className={clsx('rounded-lg border overflow-hidden bg-[#0c0c10]/80', tw.border)}>
+                    <button
+                      type="button"
+                      onClick={() => setModelMainOpen((o) => ({ ...o, [block.main]: !mainOpen }))}
+                      className="w-full flex items-center justify-between px-3 py-2 hover:bg-white/5"
+                    >
+                      <span className={clsx('text-[11px] font-bold uppercase tracking-wide', tw.text)}>
+                        {block.main}
+                      </span>
+                      {mainOpen
+                        ? <ChevronDown size={13} className="text-slate-500" />
+                        : <ChevronRight size={13} className="text-slate-500" />}
+                    </button>
+                    {mainOpen && (
+                      <div className="px-1.5 pb-1.5 space-y-0.5 border-t border-slate-800/60 pt-1">
+                        {allParams.map((param) => (
+                          <button
+                            key={param}
+                            type="button"
+                            onClick={() => toggleModelLeafFilter(param)}
+                            className={clsx(
+                              'w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-all font-medium border',
+                              modelLeafFilters.includes(param)
+                                ? 'bg-[#1a1a1e] border-slate-600 text-slate-100'
+                                : 'bg-transparent border-transparent hover:bg-white/5 text-slate-400 hover:text-slate-200'
+                            )}
+                          >
+                            <span className="flex items-center gap-2 min-w-0 truncate">
+                              <span
+                                className="w-2 h-2 rounded-full shrink-0"
+                                style={{ backgroundColor: LEAF_HEX_COLORS[param] ?? '#94a3b8' }}
+                              />
+                              <span className="truncate text-left">{param}</span>
+                            </span>
+                            {modelLeafFilters.includes(param) && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.7)] shrink-0" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </aside>
   );
