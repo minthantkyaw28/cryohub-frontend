@@ -5,9 +5,9 @@ import { BrainCircuit, CheckCircle2, AlertTriangle, TrendingUp, BookOpen, Shield
 import { clsx } from 'clsx';
 
 export const ResultsPanel: React.FC = () => {
-  const { queryResult, papers, setSelectedPaper } = useAppStore();
+  const { queryResult, papers, setSelectedPaper, isResultsPanelOpen } = useAppStore();
 
-  if (!queryResult) return null;
+  if (!queryResult || !isResultsPanelOpen) return null;
 
   const sources = queryResult.sources.map(id => papers.find(p => p.id === id)).filter(Boolean);
 

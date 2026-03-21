@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { SlidersHorizontal, Sparkles, Search, Send, X } from 'lucide-react';
+import { SlidersHorizontal, Sparkles, Search, ArrowRight, X, BrainCircuit } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAppStore } from '../store';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// ─── Filter chips row ───────────────────────────────────────────────────────
+// ─── Active filter chips ──────────────────────────────────────────────────────
 const FilterChips: React.FC = () => {
   const {
     filters, toggleFilter,
@@ -12,38 +12,27 @@ const FilterChips: React.FC = () => {
     techniqueFilters, toggleTechniqueFilter,
   } = useAppStore();
 
-  const hasChips = filters.length + organFilters.length + techniqueFilters.length > 0;
-  if (!hasChips) return null;
+  const total = filters.length + organFilters.length + techniqueFilters.length;
+  if (total === 0) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
+    <div className="flex flex-wrap items-center gap-1.5 px-5 pb-2">
+      <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider shrink-0">Active:</span>
       {filters.map((f) => (
-        <button
-          key={f}
-          type="button"
-          onClick={() => toggleFilter(f)}
-          className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/20 border border-blue-500/40 text-blue-300 text-[11px] font-semibold hover:bg-blue-500/30 transition-colors"
-        >
+        <button key={f} type="button" onClick={() => toggleFilter(f)}
+          className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/20 border border-blue-500/40 text-blue-300 text-[11px] font-semibold hover:bg-blue-500/30 transition-colors">
           {f} <X size={9} />
         </button>
       ))}
       {organFilters.map((o) => (
-        <button
-          key={o}
-          type="button"
-          onClick={() => toggleOrganFilter(o)}
-          className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-semibold hover:bg-emerald-500/30 transition-colors"
-        >
+        <button key={o} type="button" onClick={() => toggleOrganFilter(o)}
+          className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-semibold hover:bg-emerald-500/30 transition-colors">
           {o} <X size={9} />
         </button>
       ))}
       {techniqueFilters.map((t) => (
-        <button
-          key={t}
-          type="button"
-          onClick={() => toggleTechniqueFilter(t)}
-          className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-semibold hover:bg-amber-500/30 transition-colors"
-        >
+        <button key={t} type="button" onClick={() => toggleTechniqueFilter(t)}
+          className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-semibold hover:bg-amber-500/30 transition-colors">
           {t} <X size={9} />
         </button>
       ))}
@@ -51,8 +40,8 @@ const FilterChips: React.FC = () => {
   );
 };
 
-// ─── Unified search bar ─────────────────────────────────────────────────────
-const SearchBar: React.FC = () => {
+// ─── Unified search bar ───────────────────────────────────────────────────────
+const UnifiedSearchBar: React.FC = () => {
   const [query, setQuery] = useState('');
   const {
     searchMode, setSearchMode,
@@ -60,104 +49,123 @@ const SearchBar: React.FC = () => {
     isQuerying,
   } = useAppStore();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!query.trim() || isQuerying) return;
-    if (searchMode === 'keyword') {
-      setSearchQuery(query);
-      setQuery('');
-    } else {
-      submitQuery(query);
-      setQuery('');
-    }
-  };
+  const isAI = searchMode === 'ai';
 
   const switchMode = (mode: 'keyword' | 'ai') => {
     setSearchMode(mode);
     setQuery('');
-    setSearchQuery(''); // clear any existing keyword filter when switching mode
+    setSearchQuery('');
   };
 
-  const isAI = searchMode === 'ai';
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim() || isQuerying) return;
+    if (isAI) {
+      submitQuery(query);
+    } else {
+      setSearchQuery(query);
+    }
+    setQuery('');
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value);
+    if (!isAI) setSearchQuery(e.target.value);
+  };
 
   return (
-    <form onSubmit={handleSubmit} className="flex items-center gap-0 flex-1 min-w-0">
+    <div className="relative">
+      <form
+        onSubmit={handleSubmit}
+        className={clsx(
+          'flex items-center h-9 rounded-xl border overflow-hidden transition-all duration-300',
+          isAI
+            ? 'bg-white/[0.06] border-blue-500/30 shadow-[0_0_16px_rgba(59,130,246,0.12)]'
+            : 'bg-white/[0.06] border-slate-700/60'
+        )}
+      >
+        {/* Mode icon buttons */}
+        <div className="flex items-center shrink-0 border-r border-white/10">
+          <button
+            id="mode-keyword"
+            type="button"
+            title="Keyword search — filter the paper list"
+            onClick={() => switchMode('keyword')}
+            className={clsx(
+              'flex items-center justify-center w-9 h-9 transition-all',
+              !isAI
+                ? 'text-white bg-white/10'
+                : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+            )}
+          >
+            <Search size={15} />
+          </button>
+          <span className="w-px h-4 bg-white/10 shrink-0" />
+          <button
+            id="mode-ai"
+            type="button"
+            title="AI synthesis — ask the knowledge base"
+            onClick={() => switchMode('ai')}
+            className={clsx(
+              'flex items-center justify-center w-9 h-9 transition-all',
+              isAI
+                ? 'text-blue-400 bg-blue-500/10'
+                : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+            )}
+          >
+            <Sparkles size={15} className={isQuerying ? 'animate-pulse' : ''} />
+          </button>
+        </div>
 
-      {/* Mode toggle — pill at left edge of bar */}
-      <div className="flex items-center shrink-0 bg-white/10 rounded-l-xl border border-r-0 border-white/20 overflow-hidden">
-        <button
-          id="mode-keyword"
-          type="button"
-          onClick={() => switchMode('keyword')}
-          className={clsx(
-            'flex items-center gap-1.5 px-3 py-2 text-xs font-bold transition-all whitespace-nowrap',
-            !isAI
-              ? 'bg-white text-slate-900'
-              : 'text-slate-400 hover:text-slate-200'
-          )}
-        >
-          <Search size={12} />
-          Keyword
-        </button>
-        <button
-          id="mode-ai"
-          type="button"
-          onClick={() => switchMode('ai')}
-          className={clsx(
-            'flex items-center gap-1.5 px-3 py-2 text-xs font-bold transition-all whitespace-nowrap',
-            isAI
-              ? 'bg-white text-slate-900'
-              : 'text-slate-400 hover:text-slate-200'
-          )}
-        >
-          <Sparkles size={12} className={isQuerying ? 'animate-pulse' : ''} />
-          Ask AI
-        </button>
-      </div>
-
-      {/* Text input */}
-      <div className="flex-1 min-w-0 relative">
+        {/* Text input */}
         <input
           type="text"
           value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            // keyword mode: filter live as you type
-            if (searchMode === 'keyword') {
-              setSearchQuery(e.target.value);
-            }
-          }}
-          placeholder={
-            isAI
-              ? 'Ask anything about cryobiology…'
-              : 'Filter papers by keyword, author…'
-          }
+          onChange={handleChange}
+          placeholder={isAI ? 'Ask anything about cryobiology…' : 'Filter by keyword or author…'}
           disabled={isQuerying}
           className={clsx(
-            'w-full bg-white/10 border-y border-white/20 text-slate-100 placeholder-slate-500',
-            'py-2 px-4 text-sm font-medium focus:outline-none focus:bg-white/15 focus:placeholder-slate-400 transition-all',
-            'disabled:opacity-60'
+            'flex-1 min-w-0 bg-transparent border-none text-slate-100 placeholder-slate-600',
+            'px-3 py-0 text-sm font-medium focus:outline-none transition-all',
+            'disabled:opacity-50'
           )}
         />
-      </div>
 
-      {/* Submit button */}
-      <button
-        type="submit"
-        disabled={!query.trim() || isQuerying}
-        className={clsx(
-          'shrink-0 flex items-center justify-center px-3 py-2 rounded-r-xl border border-l-0 border-white/20',
-          'bg-white/10 text-slate-400 hover:text-white hover:bg-white/20 transition-all',
-          'disabled:opacity-40 disabled:cursor-not-allowed'
+        {/* Send icon */}
+        <button
+          type="submit"
+          disabled={!query.trim() || isQuerying}
+          title={isAI ? 'Run AI synthesis' : 'Apply filter'}
+          className={clsx(
+            'shrink-0 flex items-center justify-center w-9 h-9 border-l border-white/10 transition-all',
+            'text-slate-500 hover:text-white hover:bg-white/5',
+            'disabled:opacity-25 disabled:cursor-not-allowed'
+          )}
+        >
+          <ArrowRight size={15} className={isQuerying ? 'animate-pulse text-blue-400' : ''} />
+        </button>
+      </form>
+
+      {/* Querying status pill */}
+      <AnimatePresence>
+        {isQuerying && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 pointer-events-none"
+          >
+            <span className="whitespace-nowrap text-[11px] text-blue-400 font-mono font-bold tracking-widest uppercase bg-[#0a0a0d]/90 backdrop-blur-md px-3 py-1 rounded-full border border-blue-500/30">
+              Synthesizing literature…
+            </span>
+          </motion.div>
         )}
-      >
-        <Send size={14} className={isQuerying ? 'animate-bounce text-blue-400' : ''} />
-      </button>
-    </form>
+      </AnimatePresence>
+    </div>
   );
 };
 
-// ─── Filters button ──────────────────────────────────────────────────────────
+// ─── Filters button ───────────────────────────────────────────────────────────
 const FiltersButton: React.FC = () => {
   const {
     isSidebarOpen, toggleSidebar,
@@ -173,14 +181,14 @@ const FiltersButton: React.FC = () => {
       type="button"
       onClick={toggleSidebar}
       className={clsx(
-        'shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border transition-all whitespace-nowrap',
+        'shrink-0 flex items-center gap-1.5 px-3 h-9 rounded-xl text-xs font-semibold border transition-all',
         isSidebarOpen
-          ? 'bg-blue-500/15 border-blue-500/50 text-blue-300'
-          : 'bg-white/5 border-white/15 text-slate-400 hover:text-slate-200 hover:bg-white/10'
+          ? 'bg-blue-500/15 border-blue-500/40 text-blue-300'
+          : 'bg-white/5 border-slate-700/60 text-slate-400 hover:text-slate-200 hover:bg-white/8'
       )}
     >
       <SlidersHorizontal size={13} />
-      Filters
+      <span>Filters</span>
       {activeCount > 0 && (
         <span className="flex items-center justify-center w-4 h-4 rounded-full bg-blue-500 text-[10px] text-white font-bold leading-none">
           {activeCount}
@@ -190,61 +198,70 @@ const FiltersButton: React.FC = () => {
   );
 };
 
-// ─── Querying status indicator ───────────────────────────────────────────────
-const QueryingIndicator: React.FC = () => {
-  const { isQuerying } = useAppStore();
+// ─── AI Synthesis panel toggle — subtle icon button, right edge ───────────────
+const AISynthesisToggle: React.FC = () => {
+  const { queryResult, isResultsPanelOpen, toggleResultsPanel, searchMode } = useAppStore();
+
+  // Only visible in AI mode when a result exists
+  if (searchMode !== 'ai' || !queryResult) return null;
+
   return (
-    <AnimatePresence>
-      {isQuerying && (
-        <motion.div
-          initial={{ opacity: 0, y: -4 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -4 }}
-          className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full pt-1 z-50 pointer-events-none"
-        >
-          <span className="text-[11px] text-blue-400 font-mono font-bold tracking-widest uppercase bg-[#0a0a0d]/90 backdrop-blur-md px-3 py-1 rounded-full border border-blue-500/30">
-            Synthesizing literature…
-          </span>
-        </motion.div>
+    <button
+      id="ai-synthesis-toggle"
+      type="button"
+      title={isResultsPanelOpen ? 'Hide AI Synthesis' : 'Show AI Synthesis'}
+      onClick={toggleResultsPanel}
+      className={clsx(
+        'shrink-0 flex items-center justify-center w-9 h-9 rounded-xl border transition-all',
+        isResultsPanelOpen
+          ? 'bg-blue-500/15 border-blue-500/40 text-blue-400'
+          : 'bg-white/5 border-slate-700/60 text-slate-500 hover:text-blue-400 hover:border-blue-500/30'
       )}
-    </AnimatePresence>
+    >
+      <BrainCircuit size={15} />
+    </button>
   );
 };
 
-// ─── Topbar ──────────────────────────────────────────────────────────────────
+// ─── Topbar ───────────────────────────────────────────────────────────────────
 export const Topbar: React.FC = () => {
   const { filters, organFilters, techniqueFilters } = useAppStore();
   const hasChips = filters.length + organFilters.length + techniqueFilters.length > 0;
 
   return (
     <header className="shrink-0 w-full bg-[#0a0a0d]/95 backdrop-blur-xl border-b border-slate-800/60 z-30 relative">
-      {/* Main bar row */}
-      <div className="flex items-center gap-4 px-5 h-[52px]">
-        {/* Logo */}
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-blue-400 text-lg leading-none">❄</span>
-          <span className="text-base font-display font-bold text-slate-100 tracking-tight">
+      {/* Main row — taller at h-16 */}
+      <div className="flex items-center gap-3 px-5 h-16">
+
+        {/* Logo — bigger */}
+        <div className="flex items-center gap-2.5 shrink-0 mr-2">
+          <span className="text-blue-400 text-2xl leading-none select-none">❄</span>
+          <span className="text-xl font-display font-bold text-slate-100 tracking-tight">
             CryoHUB
           </span>
         </div>
 
-        {/* Mode-aware search bar — takes remaining width */}
-        <div className="flex-1 min-w-0 relative">
-          <SearchBar />
-          <QueryingIndicator />
+        {/* Left spacer — pushes bar to center */}
+        <div className="flex-1" />
+
+        {/* Filters button */}
+        <FiltersButton />
+
+        {/* Unified search bar */}
+        <div className="w-full max-w-lg">
+          <UnifiedSearchBar />
         </div>
 
-        {/* Filters toggle */}
-        <FiltersButton />
+        {/* Right spacer */}
+        <div className="flex-1" />
+
+        {/* AI Synthesis toggle — appears only after a query */}
+        <AISynthesisToggle />
+
       </div>
 
-      {/* Active filter chips row — appears below main bar when chips exist */}
-      {hasChips && (
-        <div className="px-5 pb-2 flex items-center gap-2">
-          <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider shrink-0">Active:</span>
-          <FilterChips />
-        </div>
-      )}
+      {/* Active filter chips row */}
+      {hasChips && <FilterChips />}
     </header>
   );
 };

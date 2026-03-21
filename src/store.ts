@@ -29,6 +29,8 @@ interface AppState {
   isSidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
   toggleSidebar: () => void;
+  isResultsPanelOpen: boolean;
+  toggleResultsPanel: () => void;
 
   // Search bar mode
   searchMode: 'keyword' | 'ai';
@@ -101,7 +103,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   setSidebarOpen: (open) => set({ isSidebarOpen: open }),
   toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
 
-  searchMode: 'keyword',
+  isResultsPanelOpen: true,
+  toggleResultsPanel: () => set((state) => ({ isResultsPanelOpen: !state.isResultsPanelOpen })),
+
+  searchMode: 'ai',
   setSearchMode: (mode) => set({ searchMode: mode }),
 
   yearRange: [1990, 2026],

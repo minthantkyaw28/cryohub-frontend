@@ -401,7 +401,7 @@ export const GraphView: React.FC = () => {
       
       {/* Overlay UI */}
       <div className="absolute top-6 left-6 pointer-events-none">
-        <h2 className="text-slate-200 font-display font-bold text-xl tracking-tight">Knowledge Graph</h2>
+        <h2 className="text-slate-500 font-medium text-xs tracking-widest uppercase">Knowledge Graph</h2>
       </div>
     </div>
   );
