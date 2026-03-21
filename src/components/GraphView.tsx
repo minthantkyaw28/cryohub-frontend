@@ -91,12 +91,14 @@ const Nodes = ({ papers, highlightedNodes, selectedPaper, hoveredPaper, onNodeCl
   const handlePointerOver = (e: any) => {
     e.stopPropagation();
     if (e.instanceId !== undefined) {
+      document.body.style.cursor = 'pointer';
       onNodeHover(papers[e.instanceId]);
     }
   };
 
   const handlePointerOut = (e: any) => {
     e.stopPropagation();
+    document.body.style.cursor = 'auto';
     onNodeHover(null);
   };
 
@@ -338,7 +340,17 @@ export const GraphView: React.FC = () => {
           <HighlightedEdges papers={filteredPapers} highlightedNodes={highlightedNodes} />
           
           {topNodes.map(p => {
-            const label = p.title.split(' ')[0].toLowerCase();
+            let authorStr = 'Unknown';
+            if (p.authors && p.authors.length > 0) {
+              const firstAuthor = p.authors[0].trim();
+              if (firstAuthor.includes(',')) {
+                authorStr = firstAuthor.split(',')[0].trim();
+              } else {
+                const parts = firstAuthor.split(' ');
+                authorStr = parts[parts.length - 1].trim();
+              }
+            }
+            const label = `${authorStr} et al., ${p.publication_year || 'YYYY'}`;
             return (
               <Text
                 key={`label-${p.id}`}
@@ -349,6 +361,20 @@ export const GraphView: React.FC = () => {
                 anchorY="middle"
                 outlineWidth={0.1}
                 outlineColor="#000000"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedPaper(p);
+                }}
+                onPointerOver={(e) => {
+                  e.stopPropagation();
+                  document.body.style.cursor = 'pointer';
+                  setHoveredPaper(p);
+                }}
+                onPointerOut={(e) => {
+                  e.stopPropagation();
+                  document.body.style.cursor = 'auto';
+                  setHoveredPaper(null);
+                }}
               >
                 {label}
               </Text>
