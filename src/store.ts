@@ -22,6 +22,21 @@ interface AppState {
   isQuerying: boolean;
   submitQuery: (query: string) => Promise<void>;
   highlightedNodes: string[]; // array of paper ids
+
+  // View & layout state
+  viewMode: 'graph' | 'list';
+  setViewMode: (mode: 'graph' | 'list') => void;
+  isSidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+  toggleSidebar: () => void;
+
+  // Search bar mode
+  searchMode: 'keyword' | 'ai';
+  setSearchMode: (mode: 'keyword' | 'ai') => void;
+
+  // Year range filter
+  yearRange: [number, number];
+  setYearRange: (range: [number, number]) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -79,6 +94,18 @@ export const useAppStore = create<AppState>((set, get) => ({
   queryResult: null,
   isQuerying: false,
   highlightedNodes: IMPACT_CHAINS.flat(),
+
+  viewMode: 'graph',
+  setViewMode: (mode) => set({ viewMode: mode }),
+  isSidebarOpen: false,
+  setSidebarOpen: (open) => set({ isSidebarOpen: open }),
+  toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
+
+  searchMode: 'keyword',
+  setSearchMode: (mode) => set({ searchMode: mode }),
+
+  yearRange: [1990, 2026],
+  setYearRange: (range) => set({ yearRange: range }),
   submitQuery: async (query) => {
     if (!query.trim()) return;
     set({ isQuerying: true, queryResult: null, highlightedNodes: [] });

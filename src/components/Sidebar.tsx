@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, Bookmark, Brain, Heart, Activity, Droplet, Zap, ThermometerSnowflake, ShieldAlert, Microscope, Stethoscope, Layers, ChevronDown, ChevronRight } from 'lucide-react';
+import { Filter, Bookmark, Brain, Heart, Activity, Droplet, Zap, ThermometerSnowflake, ShieldAlert, Microscope, Stethoscope, Layers, ChevronDown, ChevronRight, Calendar } from 'lucide-react';
 import { useAppStore } from '../store';
 import { Category } from '../types';
 import { clsx } from 'clsx';
@@ -49,37 +49,29 @@ const PUBLICATION_TYPES = ['Research Paper', 'Journal', 'Preprint', 'Conference 
 
 export const Sidebar: React.FC = () => {
   const { 
-    searchQuery, setSearchQuery, 
     filters, toggleFilter,
     organFilters, toggleOrganFilter,
     techniqueFilters, toggleTechniqueFilter,
-    publicationFilters, togglePublicationFilter
+    publicationFilters, togglePublicationFilter,
+    isSidebarOpen,
+    yearRange, setYearRange,
   } = useAppStore();
 
   const [isClustersOpen, setIsClustersOpen] = useState(true);
   const [isOrgansOpen, setIsOrgansOpen] = useState(false);
   const [isTechniquesOpen, setIsTechniquesOpen] = useState(false);
   const [isPublicationsOpen, setIsPublicationsOpen] = useState(false);
+  const [isYearOpen, setIsYearOpen] = useState(false);
 
   return (
-    <aside className="w-72 h-full bg-[#0f0f11]/90 backdrop-blur-2xl border-r border-slate-800/50 flex flex-col p-4 text-slate-400 shadow-[4px_0_24px_rgba(0,0,0,0.2)] z-20 overflow-y-auto overflow-x-hidden scrollbar-hide">
-      <div className="mb-8 shrink-0">
-        <h1 className="text-2xl font-display font-bold text-slate-100 tracking-tight flex items-center gap-2">
-          <span className="text-blue-500">❄</span> CryoHUB
-        </h1>
-        <p className="text-xs text-slate-500 mt-1 font-medium">AI Knowledge Engine</p>
-      </div>
-
-      <div className="relative mb-6 shrink-0">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-        <input
-          type="text"
-          placeholder="Search papers..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-[#1a1a1e]/80 border border-slate-700 rounded-xl py-2.5 pl-9 pr-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm placeholder:text-slate-500 text-slate-200"
-        />
-      </div>
+    <aside className={clsx(
+      "absolute left-0 top-0 h-full w-72",
+      "bg-[#0a0a0d]/97 backdrop-blur-2xl border-r border-slate-800/50",
+      "flex flex-col p-4 text-slate-400",
+      "shadow-[4px_0_24px_rgba(0,0,0,0.3)] z-20 overflow-y-auto overflow-x-hidden scrollbar-hide",
+      "transition-transform duration-300 ease-in-out",
+      (isSidebarOpen) ? 'translate-x-0' : '-translate-x-full'
+    )}>
 
       <div className="flex-1 space-y-6">
         {/* Clusters / Research Fields */}
@@ -202,6 +194,49 @@ export const Sidebar: React.FC = () => {
                   {publicationFilters.includes(pub) && <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)] shrink-0" />}
                 </button>
               ))}
+            </div>
+          )}
+        </div>
+
+        {/* Year Range */}
+        <div>
+          <button
+            onClick={() => setIsYearOpen(!isYearOpen)}
+            className="w-full flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 hover:text-slate-300 transition-colors"
+          >
+            <span className="flex items-center gap-2"><Calendar size={14} /> Year Range</span>
+            {isYearOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          </button>
+          {isYearOpen && (
+            <div className="mt-3 px-1 space-y-3">
+              <div className="flex justify-between text-xs text-slate-400 font-medium">
+                <span>{yearRange[0]}</span>
+                <span>{yearRange[1]}</span>
+              </div>
+              <div className="space-y-2">
+                <input
+                  type="range"
+                  min={1990}
+                  max={2026}
+                  value={yearRange[0]}
+                  onChange={(e) => {
+                    const val = +e.target.value;
+                    if (val < yearRange[1]) setYearRange([val, yearRange[1]]);
+                  }}
+                  className="w-full accent-blue-500 cursor-pointer"
+                />
+                <input
+                  type="range"
+                  min={1990}
+                  max={2026}
+                  value={yearRange[1]}
+                  onChange={(e) => {
+                    const val = +e.target.value;
+                    if (val > yearRange[0]) setYearRange([yearRange[0], val]);
+                  }}
+                  className="w-full accent-blue-500 cursor-pointer"
+                />
+              </div>
             </div>
           )}
         </div>

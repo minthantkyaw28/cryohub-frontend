@@ -319,7 +319,8 @@ export const GraphView: React.FC = () => {
     setSelectedPaper,
     hoveredPaper,
     setHoveredPaper,
-    highlightedNodes
+    highlightedNodes,
+    yearRange,
   } = useAppStore();
 
   const controlsRef = useRef<any>(null);
@@ -333,9 +334,10 @@ export const GraphView: React.FC = () => {
       const matchesOrgan = organFilters.length === 0 || organFilters.includes(p.organType);
       const matchesTechnique = techniqueFilters.length === 0 || techniqueFilters.includes(p.techniqueType);
       const matchesPublication = publicationFilters.length === 0 || publicationFilters.includes(p.publicationType);
-      return matchesSearch && matchesCategory && matchesOrgan && matchesTechnique && matchesPublication;
+      const matchesYear = p.year >= yearRange[0] && p.year <= yearRange[1];
+      return matchesSearch && matchesCategory && matchesOrgan && matchesTechnique && matchesPublication && matchesYear;
     });
-  }, [papers, searchQuery, filters, organFilters, techniqueFilters, publicationFilters]);
+  }, [papers, searchQuery, filters, organFilters, techniqueFilters, publicationFilters, yearRange]);
 
   const hasHighlights = highlightedNodes.length > 0;
 
