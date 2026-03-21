@@ -8,13 +8,8 @@ import {
 import { clsx } from 'clsx';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const getConfidenceColor = (level: string) => {
-  switch (level) {
-    case 'High':   return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
-    case 'Medium': return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
-    case 'Low':    return 'text-rose-400 bg-rose-500/10 border-rose-500/20';
-    default:       return 'text-slate-400 bg-slate-500/10 border-slate-500/20';
-  }
+const getConfidenceColor = () => {
+  return 'text-blue-400 bg-blue-500/10 border-blue-500/20';
 };
 
 const timeAgo = (ts: number) => {
@@ -62,8 +57,8 @@ const HistoryList: React.FC = () => {
               {entry.query}
             </p>
             <div className="flex items-center gap-2 mt-1.5">
-              <span className={clsx('text-[10px] font-bold px-1.5 py-0.5 rounded border', getConfidenceColor(entry.result.confidence))}>
-                {entry.result.confidence}
+              <span className={clsx('text-[10px] font-bold px-1.5 py-0.5 rounded border', getConfidenceColor())}>
+                Synthesis
               </span>
               <span className="text-[10px] text-slate-600 flex items-center gap-1">
                 <Clock size={9} />
@@ -80,7 +75,7 @@ const HistoryList: React.FC = () => {
 // ─── View 2: AI Synthesis detail ─────────────────────────────────────────────
 const SynthesisDetail: React.FC<{ entry: QueryHistoryEntry }> = ({ entry }) => {
   const { papers, setSelectedPaper, setActiveHistoryId } = useAppStore();
-  const sources = entry.result.sources.map(id => papers.find(p => p.id === id)).filter(Boolean);
+  const sources = entry.result.sources;
 
   return (
     <div className="flex flex-col h-full">
@@ -101,9 +96,9 @@ const SynthesisDetail: React.FC<{ entry: QueryHistoryEntry }> = ({ entry }) => {
               AI Synthesis
             </h2>
           </div>
-          <div className={clsx('px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1', getConfidenceColor(entry.result.confidence))}>
+          <div className={clsx('px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1', getConfidenceColor())}>
             <ShieldCheck size={10} />
-            {entry.result.confidence}
+            Verified
           </div>
         </div>
         <p className="text-[11px] text-slate-500 mt-1 ml-8 line-clamp-2 italic">"{entry.query}"</p>
@@ -115,38 +110,30 @@ const SynthesisDetail: React.FC<{ entry: QueryHistoryEntry }> = ({ entry }) => {
         {/* Answer */}
         <section>
           <p className="text-sm leading-relaxed text-slate-300 font-medium">
-            {entry.result.answer}
+            {entry.result.data.summary}
           </p>
         </section>
 
         {/* Key Insights */}
         <section className="space-y-3">
           <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-800 pb-2">
-            Key Insights
+            AI Synthesis Sub-Topics
           </h3>
           <div className="space-y-2.5">
             <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 shadow-sm">
               <h4 className="text-xs font-bold text-emerald-400 flex items-center gap-1.5 mb-2">
-                <CheckCircle2 size={12} /> Agreements
+                <CheckCircle2 size={12} /> Key Findings
               </h4>
               <ul className="list-disc list-inside text-xs space-y-1 text-slate-400 font-medium">
-                {entry.result.insights.agreements.map((item, i) => <li key={i}>{item}</li>)}
+                {entry.result.data.key_findings.map((item: string, i: number) => <li key={i}>{item}</li>)}
               </ul>
             </div>
             <div className="bg-rose-500/5 border border-rose-500/20 rounded-xl p-3 shadow-sm">
               <h4 className="text-xs font-bold text-rose-400 flex items-center gap-1.5 mb-2">
-                <AlertTriangle size={12} /> Contradictions
+                <AlertTriangle size={12} /> Limitations
               </h4>
               <ul className="list-disc list-inside text-xs space-y-1 text-slate-400 font-medium">
-                {entry.result.insights.contradictions.map((item, i) => <li key={i}>{item}</li>)}
-              </ul>
-            </div>
-            <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-3 shadow-sm">
-              <h4 className="text-xs font-bold text-blue-400 flex items-center gap-1.5 mb-2">
-                <TrendingUp size={12} /> Emerging Trends
-              </h4>
-              <ul className="list-disc list-inside text-xs space-y-1 text-slate-400 font-medium">
-                {entry.result.insights.trends.map((item, i) => <li key={i}>{item}</li>)}
+                {entry.result.data.limitations.map((item: string, i: number) => <li key={i}>{item}</li>)}
               </ul>
             </div>
           </div>
@@ -168,7 +155,7 @@ const SynthesisDetail: React.FC<{ entry: QueryHistoryEntry }> = ({ entry }) => {
                   {paper?.title}
                 </p>
                 <p className="text-[10px] text-slate-500 mt-1 font-medium">
-                  {paper?.authors[0]} et al. · {paper?.year}
+                  {paper?.authors[0]} et al. · {paper?.publication_year}
                 </p>
               </button>
             ))}

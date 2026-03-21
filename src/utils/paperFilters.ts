@@ -22,89 +22,74 @@ export function paperMatchesFilters(paper: Paper, s: PaperFilterState): boolean 
   const matchesSearch =
     !q ||
     paper.title.toLowerCase().includes(q) ||
-    paper.authors.some((a) => a.toLowerCase().includes(q)) ||
-    paper.journalName.toLowerCase().includes(q);
+    (paper.authors && paper.authors.some((a) => a.toLowerCase().includes(q))) ||
+    (paper.journal && paper.journal.toLowerCase().includes(q));
 
   const matchesResearch =
-    s.researchTypeFilters.length === 0 || s.researchTypeFilters.includes(paper.researchType);
+    s.researchTypeFilters.length === 0 || (paper.research_type && paper.research_type.some(rt => s.researchTypeFilters.includes(rt as any)));
 
   const matchesFunding =
-    s.fundingFilters.length === 0 || s.fundingFilters.includes(paper.fundingSource);
+    s.fundingFilters.length === 0 || (paper.funding_source && paper.funding_source.some(f => s.fundingFilters.includes(f as any)));
 
   const matchesOA =
     s.openAccess === 'any' ||
-    (s.openAccess === 'yes' && paper.openAccess) ||
-    (s.openAccess === 'no' && !paper.openAccess);
+    (s.openAccess === 'yes' && !!paper.open_access) ||
+    (s.openAccess === 'no' && !paper.open_access);
 
-  const matchesJournal = qMatch(s.journalQuery, paper.journalName);
+  const matchesJournal = qMatch(s.journalQuery, paper.journal || '');
   const matchesAuthor =
     !s.authorInstitutionQuery.trim() ||
-    paper.authors.some((a) => qMatch(s.authorInstitutionQuery, a)) ||
-    qMatch(s.authorInstitutionQuery, paper.authorInstitution);
-  const matchesCountry = qMatch(s.countryQuery, paper.countryRegion);
-  const matchesCpaType = qMatch(s.cpaTypeQuery, paper.cpaType);
+    (paper.authors && paper.authors.some((a) => qMatch(s.authorInstitutionQuery, a))) ||
+    (paper.author_institution && paper.author_institution.some(ai => qMatch(s.authorInstitutionQuery, ai)));
+  const matchesCountry = paper.country_region ? paper.country_region.some(cr => qMatch(s.countryQuery, cr)) : qMatch(s.countryQuery, '');
+  const matchesCpaType = paper.cpa_type ? paper.cpa_type.some(c => qMatch(s.cpaTypeQuery, c)) : qMatch(s.cpaTypeQuery, '');
 
   const matchesIF =
-    paper.journalImpactFactor >= s.impactFactorRange[0] &&
-    paper.journalImpactFactor <= s.impactFactorRange[1];
+    (paper.journal_impact_factor || 0) >= s.impactFactorRange[0] &&
+    (paper.journal_impact_factor || 0) <= s.impactFactorRange[1];
 
   const matchesCites =
-    paper.citationCount >= s.citationCountRange[0] &&
-    paper.citationCount <= s.citationCountRange[1];
+    (paper.citations || 0) >= s.citationCountRange[0] &&
+    (paper.citations || 0) <= s.citationCountRange[1];
 
   const matchesCpaConc =
-    paper.cpaConcentrationPercent >= s.cpaConcRange[0] &&
-    paper.cpaConcentrationPercent <= s.cpaConcRange[1];
+    (paper.cpa_concentration_min || 0) >= s.cpaConcRange[0] &&
+    (paper.cpa_concentration_min || 0) <= s.cpaConcRange[1];
 
-  const ex = paper.experimental;
   const matchesCool =
-    ex.coolingRateCPerMin >= s.coolingRateRange[0] &&
-    ex.coolingRateCPerMin <= s.coolingRateRange[1];
+    (paper.cooling_rate || 0) >= s.coolingRateRange[0] &&
+    (paper.cooling_rate || 0) <= s.coolingRateRange[1];
   const matchesWarm =
-    ex.warmingRateCPerMin >= s.warmingRateRange[0] &&
-    ex.warmingRateCPerMin <= s.warmingRateRange[1];
+    (paper.warming_rate || 0) >= s.warmingRateRange[0] &&
+    (paper.warming_rate || 0) <= s.warmingRateRange[1];
   const matchesStorage =
-    ex.storageDurationDays >= s.storageDaysRange[0] &&
-    ex.storageDurationDays <= s.storageDaysRange[1];
+    (paper.storage_duration || 0) >= s.storageDaysRange[0] &&
+    (paper.storage_duration || 0) <= s.storageDaysRange[1];
   const matchesTemp =
-    ex.storageTempC >= s.storageTempRange[0] && ex.storageTempC <= s.storageTempRange[1];
+    (paper.storage_temperature || 0) >= s.storageTempRange[0] &&
+    (paper.storage_temperature || 0) <= s.storageTempRange[1];
 
-  const matchesYear = paper.year >= s.yearRange[0] && paper.year <= s.yearRange[1];
+  const matchesYear = (paper.publication_year || 0) >= s.yearRange[0] && (paper.publication_year || 0) <= s.yearRange[1];
 
   const matchesTech =
     s.techniqueFilters.length === 0 ||
-    s.techniqueFilters.some((t) => paper.techniqueTags.includes(t));
+    (paper.techniques && s.techniqueFilters.some((t) => paper.techniques.includes(t)));
 
   const matchesOutcomes =
-    s.outcomeFilters.length === 0 || s.outcomeFilters.some((o) => paper.outcomes.includes(o));
+    s.outcomeFilters.length === 0 || (paper.outcomes_metrics && s.outcomeFilters.some((o) => paper.outcomes_metrics.includes(o)));
 
   const matchesModel =
-    s.modelLeafFilters.length === 0 || s.modelLeafFilters.includes(paper.modelParam);
+    s.modelLeafFilters.length === 0 || (paper.model_type && paper.model_type.some(m => s.modelLeafFilters.includes(m)));
 
   const matchesPub =
-    s.publicationFilters.length === 0 || s.publicationFilters.includes(paper.publicationType);
+    s.publicationFilters.length === 0 || (paper.publication_type && paper.publication_type.some(p => s.publicationFilters.includes(p)));
 
   return (
-    matchesSearch &&
-    matchesResearch &&
-    matchesFunding &&
-    matchesOA &&
-    matchesJournal &&
-    matchesAuthor &&
-    matchesCountry &&
-    matchesCpaType &&
-    matchesIF &&
-    matchesCites &&
-    matchesCpaConc &&
-    matchesCool &&
-    matchesWarm &&
-    matchesStorage &&
-    matchesTemp &&
-    matchesYear &&
-    matchesTech &&
-    matchesOutcomes &&
-    matchesModel &&
-    matchesPub
+    matchesSearch && matchesResearch && matchesFunding && matchesOA &&
+    matchesJournal && matchesAuthor && matchesCountry && matchesCpaType &&
+    matchesIF && matchesCites && matchesCpaConc && matchesCool && matchesWarm &&
+    matchesStorage && matchesTemp && matchesYear && matchesTech &&
+    matchesOutcomes && matchesModel && matchesPub
   );
 }
 

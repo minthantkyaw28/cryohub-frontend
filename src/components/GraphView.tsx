@@ -9,7 +9,8 @@ import { LEAF_HEX_COLORS, LEAF_HEX_FALLBACK } from '../data/searchSchema';
 import { hasActiveFilters, paperMatchesFilters } from '../utils/paperFilters';
 
 function nodeColor(paper: Paper): string {
-  return LEAF_HEX_COLORS[paper.modelParam] ?? LEAF_HEX_FALLBACK;
+  const modelLeaf = paper.model_type && paper.model_type.length > 0 ? paper.model_type[0] : '';
+  return LEAF_HEX_COLORS[modelLeaf] ?? LEAF_HEX_FALLBACK;
 }
 
 const Nodes = ({ papers, highlightedNodes, selectedPaper, hoveredPaper, onNodeClick, onNodeHover }: any) => {
@@ -123,7 +124,7 @@ const Nodes = ({ papers, highlightedNodes, selectedPaper, hoveredPaper, onNodeCl
         <Html position={hoveredPaper.position} distanceFactor={10} zIndexRange={[100, 0]}>
           <div className="bg-[#1a1a1e]/95 backdrop-blur-md border border-slate-700 text-slate-200 p-2.5 rounded-xl shadow-lg w-56 pointer-events-none transform -translate-x-1/2 -translate-y-full mt-[-12px]">
             <p className="text-sm font-bold truncate">{hoveredPaper.title}</p>
-            <p className="text-[11px] text-slate-400 mt-1 font-medium">{hoveredPaper.year} • {hoveredPaper.modelTypeMain} · {hoveredPaper.modelParam}</p>
+            <p className="text-[11px] text-slate-400 mt-1 font-medium">{hoveredPaper.publication_year} • {hoveredPaper.model_type?.[0] || 'Unknown'} · {hoveredPaper.research_type?.[0] || 'Unknown'}</p>
           </div>
         </Html>
       )}
@@ -139,7 +140,7 @@ const StaticEdges = ({ papers, hasHighlights }: { papers: Paper[], hasHighlights
     const colorObj2 = new THREE.Color();
 
     papers.forEach(p1 => {
-      p1.citations.forEach(citId => {
+      p1.internal_citations.forEach(citId => {
         const p2 = papers.find(p => p.id === citId);
         if (p2) {
           points.push(p1.position[0], p1.position[1], 0);
@@ -192,14 +193,14 @@ const AnimatedLine = ({ start, end, color, opacity, lineWidth, isHighlighted }: 
   );
 };
 
-const HighlightedEdges = ({ papers, highlightedNodes }: { papers: Paper[], highlightedNodes: string[] }) => {
+const HighlightedEdges = ({ papers, highlightedNodes }: { papers: Paper[], highlightedNodes: number[] }) => {
   const lines = useMemo(() => {
     const result: any[] = [];
     if (highlightedNodes.length === 0) return result;
     
     papers.forEach(p1 => {
       if (!highlightedNodes.includes(p1.id)) return;
-      p1.citations.forEach(citId => {
+      p1.internal_citations.forEach(citId => {
         if (!highlightedNodes.includes(citId)) return;
         const p2 = papers.find(p => p.id === citId);
         if (p2) {
@@ -313,7 +314,7 @@ export const GraphView: React.FC = () => {
   const hasHighlights = highlightedNodes.length > 0;
 
   const topNodes = useMemo(() => {
-    return [...filteredPapers].sort((a, b) => b.citations.length - a.citations.length).slice(0, 25);
+    return [...filteredPapers].sort((a, b) => (b.citations || 0) - (a.citations || 0)).slice(0, 25);
   }, [filteredPapers]);
 
   return (

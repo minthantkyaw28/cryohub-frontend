@@ -34,7 +34,7 @@ export const ListPanel: React.FC = () => {
               <div className="flex items-start gap-3">
                 <span
                   className="mt-1.5 shrink-0 w-2 h-2 rounded-full"
-                  style={{ backgroundColor: LEAF_HEX_COLORS[paper.modelParam] ?? LEAF_HEX_FALLBACK }}
+                  style={{ backgroundColor: LEAF_HEX_COLORS[paper.model_type?.[0] ?? ''] ?? LEAF_HEX_FALLBACK }}
                 />
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-slate-200 group-hover:text-blue-400 transition-colors line-clamp-2 leading-snug">
@@ -42,13 +42,13 @@ export const ListPanel: React.FC = () => {
                   </p>
                   <p className="text-xs text-slate-500 mt-1.5 font-medium">
                     {paper.authors[0]}
-                    {paper.authors.length > 1 ? ' et al.' : ''} &middot; {paper.year} &middot;{' '}
+                    {paper.authors.length > 1 ? ' et al.' : ''} &middot; {paper.publication_year} &middot;{' '}
                     <span className="text-slate-600">
-                      {paper.modelTypeMain} › {paper.modelParam}
+                      {paper.model_type?.[0] || 'Unknown'}
                     </span>
                   </p>
                   <p className="text-[10px] text-slate-600 mt-1 font-medium">
-                    {paper.researchType} · {paper.publicationType} · IF {paper.journalImpactFactor.toFixed(1)}
+                    {paper.research_type?.[0] || 'N/A'} · {paper.publication_type?.[0] || 'N/A'} · IF {paper.journal_impact_factor ? paper.journal_impact_factor.toFixed(1) : 'N/A'}
                   </p>
                 </div>
               </div>
