@@ -44,32 +44,39 @@ export function paperMatchesFilters(paper: Paper, s: PaperFilterState): boolean 
   const matchesCountry = paper.country_region ? paper.country_region.some(cr => qMatch(s.countryQuery, cr)) : qMatch(s.countryQuery, '');
   const matchesCpaType = paper.cpa_type ? paper.cpa_type.some(c => qMatch(s.cpaTypeQuery, c)) : qMatch(s.cpaTypeQuery, '');
 
+  const d = DEFAULT_FILTER_RANGES;
+
   const matchesIF =
-    (paper.journal_impact_factor || 0) >= s.impactFactorRange[0] &&
-    (paper.journal_impact_factor || 0) <= s.impactFactorRange[1];
+    (s.impactFactorRange[0] === d.impactFactor[0] && s.impactFactorRange[1] === d.impactFactor[1]) ||
+    (paper.journal_impact_factor != null && paper.journal_impact_factor >= s.impactFactorRange[0] && paper.journal_impact_factor <= s.impactFactorRange[1]);
 
   const matchesCites =
-    (paper.citations || 0) >= s.citationCountRange[0] &&
-    (paper.citations || 0) <= s.citationCountRange[1];
+    (s.citationCountRange[0] === d.citationCount[0] && s.citationCountRange[1] === d.citationCount[1]) ||
+    (paper.citations != null && paper.citations >= s.citationCountRange[0] && paper.citations <= s.citationCountRange[1]);
 
   const matchesCpaConc =
-    (paper.cpa_concentration_min || 0) >= s.cpaConcRange[0] &&
-    (paper.cpa_concentration_min || 0) <= s.cpaConcRange[1];
+    (s.cpaConcRange[0] === d.cpaConc[0] && s.cpaConcRange[1] === d.cpaConc[1]) ||
+    (paper.cpa_concentration_min != null && paper.cpa_concentration_min >= s.cpaConcRange[0] && paper.cpa_concentration_min <= s.cpaConcRange[1]);
 
   const matchesCool =
-    (paper.cooling_rate || 0) >= s.coolingRateRange[0] &&
-    (paper.cooling_rate || 0) <= s.coolingRateRange[1];
-  const matchesWarm =
-    (paper.warming_rate || 0) >= s.warmingRateRange[0] &&
-    (paper.warming_rate || 0) <= s.warmingRateRange[1];
-  const matchesStorage =
-    (paper.storage_duration || 0) >= s.storageDaysRange[0] &&
-    (paper.storage_duration || 0) <= s.storageDaysRange[1];
-  const matchesTemp =
-    (paper.storage_temperature || 0) >= s.storageTempRange[0] &&
-    (paper.storage_temperature || 0) <= s.storageTempRange[1];
+    (s.coolingRateRange[0] === d.coolingRate[0] && s.coolingRateRange[1] === d.coolingRate[1]) ||
+    (paper.cooling_rate != null && paper.cooling_rate >= s.coolingRateRange[0] && paper.cooling_rate <= s.coolingRateRange[1]);
 
-  const matchesYear = (paper.publication_year || 0) >= s.yearRange[0] && (paper.publication_year || 0) <= s.yearRange[1];
+  const matchesWarm =
+    (s.warmingRateRange[0] === d.warmingRate[0] && s.warmingRateRange[1] === d.warmingRate[1]) ||
+    (paper.warming_rate != null && paper.warming_rate >= s.warmingRateRange[0] && paper.warming_rate <= s.warmingRateRange[1]);
+
+  const matchesStorage =
+    (s.storageDaysRange[0] === d.storageDays[0] && s.storageDaysRange[1] === d.storageDays[1]) ||
+    (paper.storage_duration != null && paper.storage_duration >= s.storageDaysRange[0] && paper.storage_duration <= s.storageDaysRange[1]);
+
+  const matchesTemp =
+    (s.storageTempRange[0] === d.storageTemp[0] && s.storageTempRange[1] === d.storageTemp[1]) ||
+    (paper.storage_temperature != null && paper.storage_temperature >= s.storageTempRange[0] && paper.storage_temperature <= s.storageTempRange[1]);
+
+  const matchesYear = 
+    (s.yearRange[0] === d.year[0] && s.yearRange[1] === d.year[1]) ||
+    (paper.publication_year != null && paper.publication_year >= s.yearRange[0] && paper.publication_year <= s.yearRange[1]);
 
   const matchesTech =
     s.techniqueFilters.length === 0 ||
