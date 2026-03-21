@@ -75,7 +75,7 @@ const HistoryList: React.FC = () => {
 // ─── View 2: AI Synthesis detail ─────────────────────────────────────────────
 const SynthesisDetail: React.FC<{ entry: QueryHistoryEntry }> = ({ entry }) => {
   const { papers, setSelectedPaper, setActiveHistoryId } = useAppStore();
-  const sources = entry.result.sources;
+  const sources = entry.result.sources || [];
 
   return (
     <div className="flex flex-col h-full">
@@ -145,20 +145,24 @@ const SynthesisDetail: React.FC<{ entry: QueryHistoryEntry }> = ({ entry }) => {
             <BookOpen size={11} /> Sources ({sources.length})
           </h3>
           <div className="space-y-2">
-            {sources.map((paper, i) => (
-              <button
-                key={i}
-                onClick={() => setSelectedPaper(paper as any)}
-                className="w-full text-left p-3 rounded-xl bg-[#1a1a1e] border border-slate-700 hover:border-blue-500/50 transition-all group shadow-sm"
-              >
-                <p className="text-xs font-semibold text-slate-200 group-hover:text-blue-400 transition-colors line-clamp-2">
-                  {paper?.title}
-                </p>
-                <p className="text-[10px] text-slate-500 mt-1 font-medium">
-                  {paper?.authors[0]} et al. · {paper?.publication_year}
-                </p>
-              </button>
-            ))}
+            {sources.length > 0 ? (
+              sources.map((paper, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSelectedPaper(paper as any)}
+                  className="w-full text-left p-3 rounded-xl bg-[#1a1a1e] border border-slate-700 hover:border-blue-500/50 transition-all group shadow-sm"
+                >
+                  <p className="text-xs font-semibold text-slate-200 group-hover:text-blue-400 transition-colors line-clamp-2">
+                    {paper?.title || 'Unknown Title'}
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-1 font-medium">
+                    {paper?.authors?.[0] || 'Unknown Author'} et al. · {paper?.publication_year || 'Unknown Year'}
+                  </p>
+                </button>
+              ))
+            ) : (
+              <p className="text-xs text-slate-500 font-medium">No verified sources found for this query.</p>
+            )}
           </div>
         </section>
       </div>
