@@ -17,6 +17,19 @@ const CATEGORY_COLORS: Record<Category, string> = {
   'Clinical Applications': 'text-teal-500'
 };
 
+const CATEGORY_BG_COLORS: Record<Category, string> = {
+  'Cryoprotectants': 'bg-purple-500',
+  'Vitrification': 'bg-cyan-500',
+  'Organ Preservation': 'bg-blue-500',
+  'Neural Preservation': 'bg-emerald-500',
+  'Cardiac Preservation': 'bg-rose-500',
+  'Ice Physics & Thermodynamics': 'bg-amber-500',
+  'Rewarming Techniques': 'bg-orange-500',
+  'Toxicity & Biocompatibility': 'bg-red-500',
+  'Nanotechnology Methods': 'bg-indigo-500',
+  'Clinical Applications': 'bg-teal-500'
+};
+
 const CATEGORY_ICONS: Record<Category, React.ReactNode> = {
   'Cryoprotectants': <Droplet size={16} />,
   'Vitrification': <Layers size={16} />,
@@ -92,6 +105,7 @@ export const Sidebar: React.FC = () => {
                   )}
                 >
                   <div className="flex items-center gap-2.5 truncate">
+                    <span className={`w-2.5 h-2.5 rounded-full ${CATEGORY_BG_COLORS[category]} shrink-0`} />
                     <span className={CATEGORY_COLORS[category]}>{CATEGORY_ICONS[category]}</span>
                     <span className="truncate">{category}</span>
                   </div>

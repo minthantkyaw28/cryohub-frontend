@@ -52,9 +52,11 @@ const Nodes = ({ papers, highlightedNodes, selectedPaper, hoveredPaper, onNodeCl
       // For InstancedMesh, emissive is global, so we can't easily have per-instance emissive.
       // Instead, we can brighten the color itself for highlighted nodes.
       if (isSelected || isHighlighted || isHovered) {
-        tempColor.multiplyScalar(1.5); // Brighten
+        tempColor.multiplyScalar(2.0); // Brighten more
       } else if (hasHighlights) {
-        tempColor.multiplyScalar(0.3); // Dim
+        tempColor.multiplyScalar(0.4); // Dim less
+      } else {
+        tempColor.multiplyScalar(1.3); // Make default bolder
       }
 
       tempColor.toArray(colorArray, i * 3);
@@ -121,7 +123,7 @@ const Nodes = ({ papers, highlightedNodes, selectedPaper, hoveredPaper, onNodeCl
       <circleGeometry args={[1, 32]}>
         <instancedBufferAttribute attach="attributes-color" args={[colorArray, 3]} />
       </circleGeometry>
-      <meshBasicMaterial vertexColors toneMapped={false} transparent opacity={0.9} />
+      <meshBasicMaterial vertexColors toneMapped={false} transparent opacity={1.0} />
       
       {hoveredPaper && (
         <Html position={hoveredPaper.position} distanceFactor={10} zIndexRange={[100, 0]}>
@@ -149,8 +151,8 @@ const StaticEdges = ({ papers, hasHighlights }: { papers: Paper[], hasHighlights
           points.push(p1.position[0], p1.position[1], 0);
           points.push(p2.position[0], p2.position[1], 0);
 
-          colorObj1.set(CATEGORY_COLORS[p1.category as Category]);
-          colorObj2.set(CATEGORY_COLORS[p2.category as Category]);
+          colorObj1.set(CATEGORY_COLORS[p1.category as Category]).multiplyScalar(1.5);
+          colorObj2.set(CATEGORY_COLORS[p2.category as Category]).multiplyScalar(1.5);
 
           colors.push(colorObj1.r, colorObj1.g, colorObj1.b);
           colors.push(colorObj2.r, colorObj2.g, colorObj2.b);
@@ -165,7 +167,7 @@ const StaticEdges = ({ papers, hasHighlights }: { papers: Paper[], hasHighlights
 
   return (
     <lineSegments geometry={lineGeometry}>
-      <lineBasicMaterial vertexColors transparent opacity={hasHighlights ? 0.05 : 0.15} />
+      <lineBasicMaterial vertexColors transparent opacity={hasHighlights ? 0.1 : 0.4} />
     </lineSegments>
   );
 };
@@ -211,8 +213,8 @@ const HighlightedEdges = ({ papers, highlightedNodes }: { papers: Paper[], highl
             start: [p1.position[0], p1.position[1], 0],
             end: [p2.position[0], p2.position[1], 0],
             color: '#ffffff', // bright white
-            opacity: 0.8,
-            lineWidth: 2,
+            opacity: 1.0,
+            lineWidth: 3,
             isHighlighted: true
           });
         }
@@ -398,7 +400,6 @@ export const GraphView: React.FC = () => {
       {/* Overlay UI */}
       <div className="absolute top-6 left-6 pointer-events-none">
         <h2 className="text-slate-200 font-display font-bold text-xl tracking-tight">Knowledge Graph</h2>
-        <p className="text-slate-400 text-sm font-medium mt-1">{filteredPapers.length} papers visible</p>
       </div>
     </div>
   );
