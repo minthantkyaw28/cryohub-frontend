@@ -1,0 +1,122 @@
+import React from 'react';
+import { useAppStore } from '../store';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, FileText, Users, Calendar, Link as LinkIcon, ExternalLink } from 'lucide-react';
+
+export const PaperModal: React.FC = () => {
+  const { selectedPaper, setSelectedPaper, papers } = useAppStore();
+
+  if (!selectedPaper) return null;
+
+  const relatedPapers = selectedPaper.citations
+    .map(id => papers.find(p => p.id === id))
+    .filter(Boolean)
+    .slice(0, 3);
+
+  return (
+    <AnimatePresence>
+      <motion.div 
+        initial={{ opacity: 0, y: 50, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 50, scale: 0.95 }}
+        className="absolute bottom-6 right-6 z-40 w-full max-w-md max-h-[70vh] flex flex-col bg-[#1a1a1e]/95 backdrop-blur-2xl border border-slate-700/60 rounded-3xl shadow-[0_24px_48px_rgba(0,0,0,0.4)] overflow-hidden"
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between p-5 border-b border-slate-800 bg-[#1a1a1e]/50">
+          <div className="pr-4">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700 shadow-sm">
+                {selectedPaper.category}
+              </span>
+              <span className="flex items-center gap-1 text-xs font-medium text-slate-400">
+                <Calendar size={12} /> {selectedPaper.year}
+              </span>
+            </div>
+            <h2 className="text-lg font-display font-bold text-slate-100 leading-tight">
+              {selectedPaper.title}
+            </h2>
+            <div className="flex items-center gap-1.5 mt-2 text-xs font-medium text-slate-400">
+              <Users size={14} />
+              <p className="truncate">{selectedPaper.authors.join(', ')}</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setSelectedPaper(null)}
+            className="p-2 rounded-full hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors flex-shrink-0"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-5 overflow-y-auto flex-1 space-y-6 text-slate-400 bg-[#0f0f11]/50">
+          
+          {/* Abstract */}
+          <section>
+            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5 mb-2">
+              <FileText size={12} /> Abstract
+            </h3>
+            <p className="text-xs leading-relaxed text-slate-300 bg-[#1a1a1e] p-4 rounded-2xl border border-slate-800 shadow-sm font-medium">
+              {selectedPaper.abstract}
+            </p>
+          </section>
+
+          {/* Key Findings */}
+          <section>
+            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5 mb-2">
+              <SparklesIcon size={12} /> Key Findings
+            </h3>
+            <ul className="space-y-2">
+              {selectedPaper.keyFindings.map((finding, i) => (
+                <li key={i} className="flex items-start gap-2.5 bg-[#1a1a1e] p-3 rounded-xl border border-slate-800 shadow-sm">
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-500/10 text-blue-400 flex items-center justify-center text-[10px] font-bold mt-0.5 border border-blue-500/20">
+                    {i + 1}
+                  </span>
+                  <span className="text-xs text-slate-300 font-medium leading-relaxed">{finding}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          {/* Related Papers */}
+          {relatedPapers.length > 0 && (
+            <section>
+              <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5 mb-2">
+                <LinkIcon size={12} /> Related Papers
+              </h3>
+              <div className="grid gap-2">
+                {relatedPapers.map((paper, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedPaper(paper as any)}
+                    className="text-left p-3 rounded-xl bg-[#1a1a1e] border border-slate-700 hover:border-blue-500/50 hover:shadow-md transition-all group flex items-start justify-between gap-3 shadow-sm"
+                  >
+                    <div>
+                      <p className="text-xs font-semibold text-slate-200 group-hover:text-blue-400 transition-colors line-clamp-1">
+                        {paper?.title}
+                      </p>
+                      <p className="text-[10px] text-slate-500 mt-1 font-medium">
+                        {paper?.authors[0]} et al. • {paper?.year}
+                      </p>
+                    </div>
+                    <ExternalLink size={14} className="text-slate-600 group-hover:text-blue-400 flex-shrink-0" />
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
+const SparklesIcon = ({ size }: { size: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+    <path d="M5 3v4"/>
+    <path d="M19 17v4"/>
+    <path d="M3 5h4"/>
+    <path d="M17 19h4"/>
+  </svg>
+);
