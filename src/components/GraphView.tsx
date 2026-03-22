@@ -29,11 +29,11 @@ const Nodes = ({ papers, highlightedNodes, selectedPaper, hoveredPaper, onNodeCl
       const isHighlighted = highlightedNodes.includes(paper.id);
       const isHovered = hoveredPaper?.id === paper.id;
       
-      let size = 0.45;
-      if (isSelected) size = 0.85;
-      else if (isHighlighted) size = 0.7;
-      else if (isHovered) size = 0.6;
-      else if (hasHighlights) size = 0.25;
+      let size = 1.2;
+      if (isSelected) size = 2.0;
+      else if (isHighlighted) size = 1.6;
+      else if (isHovered) size = 1.5;
+      else if (hasHighlights) size = 0.6;
 
       tempObject.position.set(...paper.position);
       tempObject.scale.setScalar(size);
@@ -70,11 +70,11 @@ const Nodes = ({ papers, highlightedNodes, selectedPaper, hoveredPaper, onNodeCl
       const isHighlighted = highlightedNodes.includes(paper.id);
       const isHovered = hoveredPaper?.id === paper.id;
       
-      let size = 0.45;
-      if (isSelected) size = 0.85 + Math.sin(state.clock.elapsedTime * 6) * 0.15;
-      else if (isHighlighted) size = 0.7 + Math.sin(state.clock.elapsedTime * 4) * 0.1;
-      else if (isHovered) size = 0.6;
-      else if (hasHighlights) size = 0.25;
+      let size = 1.2;
+      if (isSelected) size = 2.0 + Math.sin(state.clock.elapsedTime * 6) * 0.3;
+      else if (isHighlighted) size = 1.6 + Math.sin(state.clock.elapsedTime * 4) * 0.2;
+      else if (isHovered) size = 1.5;
+      else if (hasHighlights) size = 0.6;
 
       tempObject.position.set(
         paper.position[0],
