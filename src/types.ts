@@ -4,54 +4,52 @@ export type FundingSource = 'Industry' | 'Academia' | 'Government';
 
 export type ModelTypeMain = 'Cells' | 'Tissues & 3D Models' | 'Whole Organ Models' | 'Model Organisms';
 
-export interface PaperExperimental {
-  coolingRateCPerMin: number;
-  warmingRateCPerMin: number;
-  storageDurationDays: number;
-  storageTempC: number;
-}
-
 export interface Paper {
-  id: string;
+  id: number;
   title: string;
-  authors: string[];
-  year: number;
   abstract: string;
-  keyFindings: string[];
-  citations: string[];
+  authors: string[];
+  publication_year: number;
+  journal: string;
+  open_access: boolean;
+  url_or_doi: string;
+
+  publication_type: string[];
+  model_type: string[];
+  research_type: string[];
+  journal_impact_factor: number | null;
+  author_institution: string[];
+  country_region: string[];
+  funding_source: string[];
+  citations: number | null;
+  techniques: string[];
+
+  cpa_type: string[];
+  cpa_concentration_min: number | null;
+  cpa_concentration_max: number | null;
+  delivery_method: string[];
+  preservation_method: string[];
+  outcomes_metrics: string[];
+  cooling_rate: number | null;
+  warming_rate: number | null;
+  storage_duration: number | null;
+  storage_temperature: number | null;
+
+  extracted_references: string[];
+  internal_citations: number[];
+
+  // Purely procedural frontend layout variables
   position: [number, number, number];
-
-  researchType: ResearchType;
-  journalName: string;
-  journalImpactFactor: number;
-  openAccess: boolean;
-  authorInstitution: string;
-  countryRegion: string;
-  fundingSource: FundingSource;
-  citationCount: number;
-
-  publicationType: string;
-  modelTypeMain: ModelTypeMain;
-  modelTypeSub: string;
-  modelParam: string;
-
-  techniqueTags: string[];
-  cpaType: string;
-  cpaConcentrationPercent: number;
-
-  outcomes: string[];
-  experimental: PaperExperimental;
 }
 
 export interface QueryResult {
-  answer: string;
-  insights: {
-    agreements: string[];
-    contradictions: string[];
-    trends: string[];
+  data: {
+    summary: string;
+    key_findings: string[];
+    limitations: string[];
+    source_titles: string[];
   };
-  sources: string[];
-  confidence: 'High' | 'Medium' | 'Low';
+  sources: Paper[];
 }
 
 /** Zustand slice shape for filter matching (subset of AppState) */

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Topbar } from './components/Topbar';
 import { Sidebar } from './components/Sidebar';
 import { GraphView } from './components/GraphView';
@@ -13,7 +13,11 @@ import { ListPanel } from './components/ListPanel';
 import { useAppStore } from './store';
 
 export default function App() {
-  const { searchMode } = useAppStore();
+  const { searchMode, initStore } = useAppStore();
+
+  useEffect(() => {
+    initStore();
+  }, [initStore]);
 
   // keyword mode = list view; ai mode = graph view
   const showGraph = searchMode === 'ai';

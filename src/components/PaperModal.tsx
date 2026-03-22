@@ -8,8 +8,8 @@ export const PaperModal: React.FC = () => {
 
   if (!selectedPaper) return null;
 
-  const relatedPapers = selectedPaper.citations
-    .map(id => papers.find(p => p.id === id))
+  const relatedPapers = selectedPaper.internal_citations
+    .map((id: number) => papers.find(p => p.id === id))
     .filter(Boolean)
     .slice(0, 3);
 
@@ -26,16 +26,13 @@ export const PaperModal: React.FC = () => {
           <div className="pr-4">
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-pink-500/15 text-pink-300 border border-pink-500/30 shadow-sm">
-                {selectedPaper.modelTypeMain}
+                {selectedPaper.model_type?.[0] || 'Unknown'}
               </span>
               <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700 shadow-sm">
-                {selectedPaper.modelParam}
-              </span>
-              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-sky-500/10 text-sky-300 border border-sky-500/25">
-                {selectedPaper.researchType}
+                {selectedPaper.research_type?.[0] || 'Unknown'}
               </span>
               <span className="flex items-center gap-1 text-xs font-medium text-slate-400">
-                <Calendar size={12} /> {selectedPaper.year}
+                <Calendar size={12} /> {selectedPaper.publication_year}
               </span>
             </div>
             <h2 className="text-lg font-display font-bold text-slate-100 leading-tight">
@@ -46,12 +43,12 @@ export const PaperModal: React.FC = () => {
               <p className="truncate">{selectedPaper.authors.join(', ')}</p>
             </div>
             <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
-              {selectedPaper.journalName} · IF {selectedPaper.journalImpactFactor.toFixed(1)} ·{' '}
-              {selectedPaper.openAccess ? 'Open access' : 'Closed access'} · {selectedPaper.publicationType} ·{' '}
-              {selectedPaper.citationCount} citations
+              {selectedPaper.journal} · IF {selectedPaper.journal_impact_factor?.toFixed(1) || 'N/A'} ·{' '}
+              {selectedPaper.open_access ? 'Open access' : 'Closed access'} · {selectedPaper.publication_type?.[0] || 'Unknown'} ·{' '}
+              {selectedPaper.citations || 0} citations
             </p>
             <p className="text-[11px] text-slate-600 mt-1">
-              {selectedPaper.authorInstitution} · {selectedPaper.countryRegion} · Funding: {selectedPaper.fundingSource}
+              {selectedPaper.author_institution?.[0] || 'Unknown'} · {selectedPaper.country_region?.[0] || 'Unknown'} · Funding: {selectedPaper.funding_source?.[0] || 'Unknown'}
             </p>
           </div>
           <button 
@@ -70,7 +67,7 @@ export const PaperModal: React.FC = () => {
               Techniques & CPA
             </h3>
             <div className="flex flex-wrap gap-1.5">
-              {selectedPaper.techniqueTags.map((t) => (
+              {selectedPaper.techniques?.map((t: string) => (
                 <span
                   key={t}
                   className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-cyan-500/10 text-cyan-300 border border-cyan-500/20"
@@ -79,7 +76,7 @@ export const PaperModal: React.FC = () => {
                 </span>
               ))}
               <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-violet-500/10 text-violet-300 border border-violet-500/20">
-                {selectedPaper.cpaType} ({selectedPaper.cpaConcentrationPercent}%)
+                {selectedPaper.cpa_type?.[0] || 'Unknown'} ({selectedPaper.cpa_concentration_min || 0}%)
               </span>
             </div>
           </section>
@@ -89,7 +86,7 @@ export const PaperModal: React.FC = () => {
               Outcomes
             </h3>
             <div className="flex flex-wrap gap-1.5">
-              {selectedPaper.outcomes.map((o) => (
+              {selectedPaper.outcomes_metrics?.map((o: string) => (
                 <span
                   key={o}
                   className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
@@ -104,16 +101,16 @@ export const PaperModal: React.FC = () => {
             <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Experimental</h3>
             <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-400 font-medium">
               <div className="bg-[#1a1a1e] p-2 rounded-lg border border-slate-800">
-                Cooling {selectedPaper.experimental.coolingRateCPerMin} °C/min
+                Cooling {selectedPaper.cooling_rate ?? 'N/A'} °C/min
               </div>
               <div className="bg-[#1a1a1e] p-2 rounded-lg border border-slate-800">
-                Warming {selectedPaper.experimental.warmingRateCPerMin} °C/min
+                Warming {selectedPaper.warming_rate ?? 'N/A'} °C/min
               </div>
               <div className="bg-[#1a1a1e] p-2 rounded-lg border border-slate-800">
-                Storage {selectedPaper.experimental.storageDurationDays} d
+                Storage {selectedPaper.storage_duration ?? 'N/A'} d
               </div>
               <div className="bg-[#1a1a1e] p-2 rounded-lg border border-slate-800">
-                Temp {selectedPaper.experimental.storageTempC} °C
+                Temp {selectedPaper.storage_temperature ?? 'N/A'} °C
               </div>
             </div>
           </section>
@@ -128,22 +125,7 @@ export const PaperModal: React.FC = () => {
             </p>
           </section>
 
-          {/* Key Findings */}
-          <section>
-            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5 mb-2">
-              <SparklesIcon size={12} /> Key Findings
-            </h3>
-            <ul className="space-y-2">
-              {selectedPaper.keyFindings.map((finding, i) => (
-                <li key={i} className="flex items-start gap-2.5 bg-[#1a1a1e] p-3 rounded-xl border border-slate-800 shadow-sm">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-500/10 text-blue-400 flex items-center justify-center text-[10px] font-bold mt-0.5 border border-blue-500/20">
-                    {i + 1}
-                  </span>
-                  <span className="text-xs text-slate-300 font-medium leading-relaxed">{finding}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
+
 
           {/* Related Papers */}
           {relatedPapers.length > 0 && (
@@ -163,7 +145,7 @@ export const PaperModal: React.FC = () => {
                         {paper?.title}
                       </p>
                       <p className="text-[10px] text-slate-500 mt-1 font-medium">
-                        {paper?.authors[0]} et al. • {paper?.year}
+                        {paper?.authors[0]} et al. • {paper?.publication_year}
                       </p>
                     </div>
                     <ExternalLink size={14} className="text-slate-600 group-hover:text-blue-400 flex-shrink-0" />

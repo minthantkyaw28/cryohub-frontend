@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import type { Paper, QueryResult, ResearchType, FundingSource, PaperFilterState } from './types';
-import { MOCK_PAPERS, IMPACT_CHAINS } from './data/mockData';
 import { DEFAULT_FILTER_RANGES, hasActiveFilters, paperMatchesFilters } from './utils/paperFilters';
 
 export interface QueryHistoryEntry {
@@ -10,79 +9,8 @@ export interface QueryHistoryEntry {
   timestamp: number;
 }
 
-const SEED_ENTRIES: QueryHistoryEntry[] = [
-  {
-    id: 'seed-3',
-    query: 'Ice recrystallization inhibitors',
-    timestamp: Date.now() - 1000 * 60 * 60 * 24 * 3,
-    result: {
-      answer:
-        'Ice recrystallization inhibitors (IRIs) are compounds that prevent the growth of ice crystals during warming, which is a major cause of cellular damage. Research has identified antifreeze proteins and small-molecule mimics as effective IRIs.',
-      insights: {
-        agreements: [
-          'IRIs significantly improve post-thaw cell viability.',
-          'PVA-based IRIs are effective at micromolar concentrations.',
-        ],
-        contradictions: ['Mechanism of action differs between protein-based and synthetic IRIs.'],
-        trends: [
-          'Growing interest in biocompatible synthetic IRI compounds.',
-          'Application in blood banking and red blood cell preservation.',
-        ],
-      },
-      sources: MOCK_PAPERS.slice(0, 4).map((p) => p.id),
-      confidence: 'High',
-    },
-  },
-  {
-    id: 'seed-2',
-    query: 'Toxicity of DMSO in neural tissue',
-    timestamp: Date.now() - 1000 * 60 * 60 * 24 * 5,
-    result: {
-      answer:
-        'Dimethyl sulfoxide (DMSO) is a widely used cryoprotectant but exhibits dose-dependent toxicity in neural tissue. Studies show mitochondrial dysfunction and apoptosis at concentrations above 5% v/v.',
-      insights: {
-        agreements: [
-          'DMSO toxicity is concentration and temperature dependent.',
-          'Brief exposure at low temperature is relatively well-tolerated.',
-        ],
-        contradictions: ['Neuroprotective vs. neurotoxic roles of DMSO are debated at sub-toxic doses.'],
-        trends: [
-          'Move towards DMSO-free protocols for neural organoids.',
-          'Trehalose and glycerol being explored as safer alternatives.',
-        ],
-      },
-      sources: MOCK_PAPERS.slice(5, 9).map((p) => p.id),
-      confidence: 'Medium',
-    },
-  },
-  {
-    id: 'seed-1',
-    query: 'Vitrification vs Slow Freezing',
-    timestamp: Date.now() - 1000 * 60 * 60 * 24 * 7,
-    result: {
-      answer:
-        'Vitrification achieves a glass-like state by avoiding ice crystal formation entirely, whereas slow freezing uses controlled cooling rates to limit intracellular ice. Vitrification shows superior outcomes for complex tissues and oocytes.',
-      insights: {
-        agreements: [
-          'Vitrification is superior for oocytes and embryos.',
-          'Slow freezing is more practical at scale for blood products.',
-        ],
-        contradictions: [
-          'Optimal CPA cocktail composition varies considerably across labs.',
-          'Warming rate dependency is disputed for large organs.',
-        ],
-        trends: [
-          'Ultrafast laser warming paired with vitrification.',
-          'Microfluidic platforms for vitrification of single cells.',
-        ],
-      },
-      sources: MOCK_PAPERS.slice(10, 14).map((p) => p.id),
-      confidence: 'High',
-    },
-  },
-];
-
 export interface AppState {
+  initStore: () => Promise<void>;
   papers: Paper[];
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -136,7 +64,7 @@ export interface AppState {
   queryResult: QueryResult | null;
   isQuerying: boolean;
   submitQuery: (query: string) => Promise<void>;
-  highlightedNodes: string[];
+  highlightedNodes: number[];
 
   viewMode: 'graph' | 'list';
   setViewMode: (mode: 'graph' | 'list') => void;
@@ -182,9 +110,49 @@ export function paperFilterSnapshot(s: AppState): PaperFilterState {
 const d = DEFAULT_FILTER_RANGES;
 
 export const useAppStore = create<AppState>((set, get) => ({
-  papers: MOCK_PAPERS,
+  initStore: async () => {
+    try {
+      const res = await fetch('http://localhost:8000/filter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}'
+      });
+      const data = await res.json();
+      const mapped = data.papers.map((p: any) => {
+        const theta = Math.random() * 2 * Math.PI;
+        const phi = Math.acos(2 * Math.random() - 1);
+        const radius = 15 + Math.random() * 25;
+        return {
+          ...p,
+          position: [
+            radius * Math.sin(phi) * Math.cos(theta),
+            radius * Math.sin(phi) * Math.sin(theta),
+            (Math.random() - 0.5) * 5
+          ]
+        };
+      });
+      set({ papers: mapped });
+    } catch (e) {
+      console.error('Failed to initialize internal SQLite mapped graph store', e);
+    }
+  },
+  papers: [],
   searchQuery: '',
-  setSearchQuery: (query) => set({ searchQuery: query }),
+  setSearchQuery: async (query) => {
+    set({ searchQuery: query });
+    try {
+      const res = await fetch('http://localhost:8000/filter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keyword_search: query || null })
+      });
+      const data = await res.json();
+      const ids = data.papers.map((p: any) => p.id);
+      set({ highlightedNodes: ids });
+    } catch (e) {
+      console.error('Keyword trace failed', e);
+    }
+  },
 
   researchTypeFilters: [],
   toggleResearchTypeFilter: (t) =>
@@ -264,12 +232,12 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (!paper) {
         return {
           selectedPaper: null,
-          highlightedNodes: state.queryResult ? state.queryResult.sources : [],
+          highlightedNodes: state.queryResult ? state.queryResult.sources.map(p => p.id) : [],
         };
       }
-      const connected = [paper.id, ...paper.citations];
+      const connected = [paper.id, ...paper.internal_citations];
       state.papers.forEach((p) => {
-        if (p.citations.includes(paper.id)) {
+        if (p.internal_citations && p.internal_citations.includes(paper.id)) {
           connected.push(p.id);
         }
       });
@@ -279,7 +247,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   setHoveredPaper: (paper) => set({ hoveredPaper: paper }),
   queryResult: null,
   isQuerying: false,
-  highlightedNodes: IMPACT_CHAINS.flat(),
+  highlightedNodes: [],
 
   viewMode: 'graph',
   setViewMode: (mode) => set({ viewMode: mode }),
@@ -293,7 +261,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   searchMode: 'ai',
   setSearchMode: (mode) => set({ searchMode: mode }),
 
-  queryHistory: SEED_ENTRIES,
+  queryHistory: [],
   activeHistoryId: null,
   setActiveHistoryId: (id) => set({ activeHistoryId: id }),
 
@@ -301,57 +269,37 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (!query.trim()) return;
     set({ isQuerying: true, queryResult: null, highlightedNodes: [] });
 
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const res = await fetch('http://localhost:8000/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: query })
+      });
+      const data = await res.json();
+      
+      const newEntry: QueryHistoryEntry = {
+        id: `q-${Date.now()}`,
+        query,
+        result: {
+          data: data.data,
+          sources: data.sources
+        },
+        timestamp: Date.now(),
+      };
 
-    const numSources = Math.floor(Math.random() * 3) + 3;
-    const allPapers = get().papers;
-    const fs = paperFilterSnapshot(get());
+      const sourceIds = data.sources.map((s: any) => s.id);
 
-    let pool = [...allPapers];
-    if (hasActiveFilters(fs)) {
-      const filteredPool = allPapers.filter((p) => paperMatchesFilters(p, fs));
-      if (filteredPool.length > 0) {
-        pool = [...filteredPool, ...filteredPool, ...allPapers];
-      }
+      set((state) => ({
+        isQuerying: false,
+        queryResult: newEntry.result,
+        highlightedNodes: sourceIds, 
+        queryHistory: [newEntry, ...state.queryHistory],
+        activeHistoryId: newEntry.id,
+        isResultsPanelOpen: true,
+      }));
+    } catch (e) {
+      console.error('Failed to fetch AI synthesis', e);
+      set({ isQuerying: false });
     }
-
-    const shuffled = pool.sort(() => 0.5 - Math.random());
-    const sources = Array.from(new Set(shuffled.map((p) => p.id))).slice(0, numSources);
-
-    const mockResult: QueryResult = {
-      answer: `Based on the literature, cryobiology has seen significant advancements in vitrification and ice recrystallization inhibition. Recent studies highlight the efficacy of novel cryoprotectants in minimizing cellular damage during the cooling phase. Specifically, research into ${query} suggests promising avenues for large-scale organ preservation.`,
-      insights: {
-        agreements: [
-          'Vitrification is superior to slow freezing for complex tissues.',
-          'Toxicity of CPAs remains a primary limiting factor.',
-        ],
-        contradictions: [
-          'Optimal warming rates vary significantly between cardiac and neural tissues.',
-          'The role of ice binding proteins is debated in mammalian systems.',
-        ],
-        trends: [
-          'Shift towards nanoparticle-mediated rapid warming.',
-          'Increased focus on non-toxic, sugar-based cryoprotectants.',
-        ],
-      },
-      sources,
-      confidence: Math.random() > 0.5 ? 'High' : 'Medium',
-    };
-
-    const newEntry: QueryHistoryEntry = {
-      id: `q-${Date.now()}`,
-      query,
-      result: mockResult,
-      timestamp: Date.now(),
-    };
-
-    set((state) => ({
-      isQuerying: false,
-      queryResult: mockResult,
-      highlightedNodes: sources,
-      queryHistory: [newEntry, ...state.queryHistory],
-      activeHistoryId: newEntry.id,
-      isResultsPanelOpen: true,
-    }));
   },
 }));
