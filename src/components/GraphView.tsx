@@ -385,11 +385,16 @@ export const GraphView: React.FC = () => {
         <CameraController controlsRef={controlsRef} userInteracting={userInteracting} filteredPapers={filteredPapers} />
         <MapControls 
           ref={controlsRef}
+          makeDefault
           enablePan={true}
           enableZoom={true}
           enableRotate={false}
           enableDamping={true}
-          dampingFactor={0.05}
+          dampingFactor={0.08}
+          zoomSpeed={0.6}
+          panSpeed={0.8}
+          minDistance={15}
+          maxDistance={150}
           onStart={() => { userInteracting.current = true; }}
           onEnd={() => { 
             setTimeout(() => { userInteracting.current = false; }, 3000);

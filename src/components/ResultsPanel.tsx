@@ -3,7 +3,7 @@ import { useAppStore, QueryHistoryEntry } from '../store';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BrainCircuit, CheckCircle2, AlertTriangle, TrendingUp,
-  BookOpen, ShieldCheck, ArrowLeft, Clock, MessageSquare
+  BookOpen, ShieldCheck, ArrowLeft, Clock, MessageSquare, X
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -24,17 +24,26 @@ const timeAgo = (ts: number) => {
 
 // ─── View 1: History list ─────────────────────────────────────────────────────
 const HistoryList: React.FC = () => {
-  const { queryHistory, setActiveHistoryId } = useAppStore();
+  const { queryHistory, setActiveHistoryId, toggleResultsPanel } = useAppStore();
 
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="p-5 border-b border-slate-800/50 shrink-0">
-        <h2 className="text-base font-display font-bold text-slate-100 flex items-center gap-2">
-          <MessageSquare className="text-blue-400" size={16} />
-          Your Queries
-        </h2>
-        <p className="text-[11px] text-slate-600 mt-0.5">Click a query to view its AI synthesis</p>
+      <div className="p-5 border-b border-slate-800/50 shrink-0 flex items-center justify-between">
+        <div>
+          <h2 className="text-base font-display font-bold text-slate-100 flex items-center gap-2">
+            <MessageSquare className="text-blue-400" size={16} />
+            Your Queries
+          </h2>
+          <p className="text-[11px] text-slate-600 mt-0.5">Click a query to view its AI synthesis</p>
+        </div>
+        <button
+          onClick={toggleResultsPanel}
+          className="p-1.5 text-blue-400 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 hover:text-blue-300 rounded-lg transition-all"
+          title="Close panel"
+        >
+          <X size={16} />
+        </button>
       </div>
 
       {/* List */}

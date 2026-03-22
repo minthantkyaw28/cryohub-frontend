@@ -42,7 +42,6 @@ export default function App() {
           {/* Graph view — CSS hidden so canvas never unmounts */}
           <div className={showGraph ? 'flex-1 relative' : 'hidden'}>
             <GraphView />
-            <PaperModal />
           </div>
 
           {/* List view — shown in keyword mode */}
@@ -54,6 +53,9 @@ export default function App() {
 
         {/* Results panel — only meaningful in AI mode */}
         <ResultsPanel />
+
+        {/* Paper Modal overlay */}
+        <PaperModal />
       </div>
     </div>
   );

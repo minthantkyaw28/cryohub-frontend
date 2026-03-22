@@ -16,14 +16,16 @@ export const PaperModal: React.FC = () => {
   return (
     <AnimatePresence>
       <motion.div 
+        drag
+        dragMomentum={false}
         initial={{ opacity: 0, y: 50, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 50, scale: 0.95 }}
         className="absolute bottom-6 right-6 z-40 w-full max-w-md max-h-[70vh] flex flex-col bg-[#1a1a1e]/95 backdrop-blur-2xl border border-slate-700/60 rounded-3xl shadow-[0_24px_48px_rgba(0,0,0,0.4)] overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-start justify-between p-5 border-b border-slate-800 bg-[#1a1a1e]/50">
-          <div className="pr-4">
+        <div className="flex items-start justify-between p-5 border-b border-slate-800 bg-[#1a1a1e]/50 cursor-grab active:cursor-grabbing">
+          <div className="pr-4 flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-pink-500/15 text-pink-300 border border-pink-500/30 shadow-sm">
                 {selectedPaper.model_type?.[0] || 'Unknown'}
@@ -35,7 +37,7 @@ export const PaperModal: React.FC = () => {
                 <Calendar size={12} /> {selectedPaper.publication_year}
               </span>
             </div>
-            <h2 className="text-lg font-display font-bold text-slate-100 leading-tight">
+            <h2 className="text-lg font-display font-bold text-slate-100 leading-tight break-words">
               {selectedPaper.title}
             </h2>
             <div className="flex items-center gap-1.5 mt-2 text-xs font-medium text-slate-400">
@@ -52,10 +54,11 @@ export const PaperModal: React.FC = () => {
             </p>
           </div>
           <button 
-            onClick={() => setSelectedPaper(null)}
-            className="p-2 rounded-full hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors flex-shrink-0"
+            onClick={(e) => { e.stopPropagation(); setSelectedPaper(null); }}
+            className="p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all flex-shrink-0 shadow-md pointer-events-auto"
+            title="Close details"
           >
-            <X size={18} />
+            <X size={16} strokeWidth={2.5} />
           </button>
         </div>
 

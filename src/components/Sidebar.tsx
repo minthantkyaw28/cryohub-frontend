@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   SlidersHorizontal,
   ThermometerSnowflake,
   Target,
@@ -54,30 +55,32 @@ function DualRange({
           {format(low)} – {format(high)}
         </span>
       </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={low}
-        onChange={(e) => {
-          const v = +e.target.value;
-          if (v <= high) onLow(v);
-        }}
-        className="w-full accent-sky-500 cursor-pointer h-1.5"
-      />
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={high}
-        onChange={(e) => {
-          const v = +e.target.value;
-          if (v >= low) onHigh(v);
-        }}
-        className="w-full accent-sky-500 cursor-pointer h-1.5"
-      />
+      <div className="relative h-4 flex items-center">
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={low}
+          onChange={(e) => {
+            const v = +e.target.value;
+            if (v <= high) onLow(v);
+          }}
+          className="absolute w-full h-1 bg-slate-800 rounded appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-sky-500 [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:bg-sky-400"
+        />
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={high}
+          onChange={(e) => {
+            const v = +e.target.value;
+            if (v >= low) onHigh(v);
+          }}
+          className="absolute w-full h-1 bg-transparent appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-sky-500 [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:bg-sky-400"
+        />
+      </div>
     </div>
   );
 }
@@ -145,6 +148,7 @@ function SectionHeader({
 export const Sidebar: React.FC = () => {
   const {
     isSidebarOpen,
+    toggleSidebar,
     researchTypeFilters,
     toggleResearchTypeFilter,
     fundingFilters,
@@ -208,7 +212,8 @@ export const Sidebar: React.FC = () => {
   const fundingDots = ['bg-amber-500', 'bg-teal-500', 'bg-emerald-500'];
 
   return (
-    <aside
+    <>
+      <aside
       className={clsx(
         'absolute left-0 top-0 h-full w-80',
         'bg-[#0a0a0d]/97 backdrop-blur-2xl border-r border-slate-800/50',
@@ -590,5 +595,18 @@ export const Sidebar: React.FC = () => {
         </div>
       </div>
     </aside>
+      <button
+        onClick={toggleSidebar}
+        className={clsx(
+          'absolute top-1/2 -translate-y-1/2 z-30 flex items-center justify-center',
+          'w-6 h-12 bg-blue-500/10 border border-blue-500/20 border-l-0 rounded-r-lg shadow-[4px_0_12px_rgba(56,189,248,0.15)] cursor-pointer',
+          'text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 transition-all duration-300 ease-in-out',
+          isSidebarOpen ? 'left-80' : 'left-0'
+        )}
+        title="Toggle Filters"
+      >
+        {isSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+      </button>
+    </>
   );
 };
